@@ -1,0 +1,97 @@
+name: 'Build OpenWrt Firmware with ImageBuilder'
+description: >-
+  Build customized OpenWrt firmware by downloading the official
+  openwrt-imagebuilder tarball directly from this repository's releases
+  (no Docker needed). Supports x86 / Rockchip targets, automatic latest
+  release detection for the 24.x / 25.x series, default LAN IP, configurable
+  rootfs size, PPPoE provisioning and extra packages.
+author: MomoFlora
+
+branding:
+  icon: 'cpu'
+  color: 'green'
+
+inputs:
+  arch:
+    description: >-
+      Target device architecture. Available tarballs in this repo's releases:
+      x86-64, x86-generic, x86-geode, x86-legacy, rockchip-armv8.
+    required: true
+    default: 'x86-64'
+
+  version:
+    description: >-
+      OpenWrt release series: '24' or '25'. The action auto-detects the
+      latest tag of that series in this repository (v24.x or v25.x).
+      An exact version like '24.10.8' is also accepted.
+    required: false
+    default: '24'
+
+  profile:
+    description: >-
+      Device profile used by ImageBuilder (make image PROFILE=...).
+      e.g. generic, friendlyarm_nanopi-r4s.
+    required: false
+    default: 'generic'
+
+  rootfs_partsize:
+    description: >-
+      Root filesystem partition size in MB (only applied where supported).
+      e.g. 1024 / 2048 / 4096
+    required: false
+    default: '2048'
+
+  lan_ip:
+    description: >-
+      Default LAN management IP written into the firmware via a first-boot
+      uci-defaults script. Empty disables it.
+    required: false
+    default: '192.168.1.1'
+
+  pppoe_account:
+    description: >-
+      Broadband account for PPPoE. Leave empty to keep WAN as DHCP.
+      When both account and password are set, WAN is configured as PPPoE.
+      Usually passed from repository secrets.
+    required: false
+    default: ''
+
+  pppoe_password:
+    description: >-
+      Broadband password for PPPoE. Leave empty to keep WAN as DHCP.
+      When both account and password are set, WAN is configured as PPPoE.
+      Usually passed from repository secrets.
+    required: false
+    default: ''
+
+  packages:
+    description: >-
+      Additional packages to include, separated by spaces.
+      e.g. 'luci-app-openclash luci-app-passwall'
+    required: false
+    default: ''
+
+outputs:
+  firmware_dir:
+    description: >-
+      Directory containing the built firmware images
+      (<workspace>/.imagebuilder/bin/targets).
+    value: ${{ steps.build.outputs.firmware_dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Build OpenWrt firmware with ImageBuilder
+      id: build
+      shell: bash
+      env:
+        INPUT_ARCH: ${{ inputs.arch }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_PROFILE: ${{ inputs.profile }}
+        INPUT_ROOTFS_PARTSIZE: ${{ inputs.rootfs_partsize }}
+        INPUT_LAN_IP: ${{ inputs.lan_ip }}
+        INPUT_PPPOE_ACCOUNT: ${{ inputs.pppoe_account }}
+        INPUT_PPPOE_PASSWORD: ${{ inputs.pppoe_password }}
+        INPUT_PACKAGES: ${{ inputs.packages }}
+      run: |
+        bash "${{ github.action_path }}/entrypoint.sh"
