@@ -62,9 +62,14 @@ jobs:
 | `profile` | ❌ | `generic` | 设备 PROFILE（如 `friendlyarm_nanopi-r4s`） |
 | `rootfs_partsize` | ❌ | `2048` | 软件包分区大小（MB） |
 | `lan_ip` | ❌ | `192.168.1.1` | 默认管理 IP（写入 uci-defaults） |
-| `pppoe_account` | ❌ | *(空)* | 宽带账号（建议走 secrets）；留空 WAN 保持 DHCP |
-| `pppoe_password` | ❌ | *(空)* | 宽带密码（建议走 secrets） |
 | `packages` | ❌ | *(空)* | 额外插件，**空格分隔** |
+
+## Secrets（密钥）
+
+| Secret | 必填 | 说明 |
+| ------ | ---- | ---- |
+| `PPPOE_ACCOUNT` | ❌ | 宽带账号；**与 `PPPOE_PASSWORD` 同时设置才启用 PPPoE 拨号**，否则 WAN 保持 DHCP |
+| `PPPOE_PASSWORD` | ❌ | 宽带密码 |
 
 ## 输出
 

@@ -48,22 +48,6 @@ inputs:
     required: false
     default: '192.168.1.1'
 
-  pppoe_account:
-    description: >-
-      Broadband account for PPPoE. Leave empty to keep WAN as DHCP.
-      When both account and password are set, WAN is configured as PPPoE.
-      Usually passed from repository secrets.
-    required: false
-    default: ''
-
-  pppoe_password:
-    description: >-
-      Broadband password for PPPoE. Leave empty to keep WAN as DHCP.
-      When both account and password are set, WAN is configured as PPPoE.
-      Usually passed from repository secrets.
-    required: false
-    default: ''
-
   packages:
     description: >-
       Additional packages to include, separated by spaces.
@@ -90,8 +74,8 @@ runs:
         INPUT_PROFILE: ${{ inputs.profile }}
         INPUT_ROOTFS_PARTSIZE: ${{ inputs.rootfs_partsize }}
         INPUT_LAN_IP: ${{ inputs.lan_ip }}
-        INPUT_PPPOE_ACCOUNT: ${{ inputs.pppoe_account }}
-        INPUT_PPPOE_PASSWORD: ${{ inputs.pppoe_password }}
+        INPUT_PPPOE_ACCOUNT: ${{ secrets.PPPOE_ACCOUNT }}
+        INPUT_PPPOE_PASSWORD: ${{ secrets.PPPOE_PASSWORD }}
         INPUT_PACKAGES: ${{ inputs.packages }}
       run: |
         bash "${{ github.action_path }}/entrypoint.sh"
