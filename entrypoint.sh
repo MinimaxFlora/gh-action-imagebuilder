@@ -43,7 +43,12 @@ IB_PREFIX="${IB_ARCH[$ARCH]:-$ARCH}"
 # 第三方插件仓库内的架构文件夹名
 declare -A PKG_DIR=(
   [x86]="x86_64"
-  [rockchip]="aarch64_generic"                  # nanopi 等均为 aarch64
+  [x86-64]="x86_64"
+  [x86-generic]="x86_64"
+  [x86-geode]="x86_64"
+  [x86-legacy]="x86_64"
+  [rockchip]="aarch64_generic"                # nanopi 等均为 aarch64
+  [rockchip-armv8]="aarch64_generic"
 )
 PKG_FOLDER="${PKG_DIR[$ARCH]:-$ARCH}"
 
@@ -243,7 +248,36 @@ echo ">> 最终软件包列表:"
 echo "    ${PACKAGES}"
 
 # -----------------------------------------------------------------------------
-# 7. Build the firmware
+# 7. OpenWrt 25.x (apk)：生成 packages.adb 索引并关闭签名校验
+#    25.12 ImageBuilder 内部 mkndx 静默失败（官方 issue #23154），
+#    必须手动生成，否则 apk 报 "unable to select packages"。
+# -----------------------------------------------------------------------------
+if ls "${IB_DIR}"/packages/*.apk >/dev/null 2>&1; then
+  echo ">> 检测到第三方 .apk 包，准备 apk 索引..."
+  # ImageBuilder 自带 host apk 工具
+  APK_BIN="${IB_ROOT}/staging_dir/host/bin/apk"
+  if [ ! -x "$APK_BIN" ]; then
+    APK_BIN="$(command -v apk 2>/dev/null || true)"
+  fi
+  if [ -n "$APK_BIN" ] && [ -x "$APK_BIN" ]; then
+    # 关闭签名校验（25.x .config 默认 CONFIG_SIGNATURE_CHECK=y）
+    if [ -f "${IB_ROOT}/.config" ]; then
+      sed -i 's/^CONFIG_SIGNATURE_CHECK=.*/CONFIG_SIGNATURE_CHECK=/' "${IB_ROOT}/.config" 2>/dev/null || true
+      echo ">> 已关闭 CONFIG_SIGNATURE_CHECK"
+    fi
+    # 手动生成未签名索引
+    if (cd "${IB_DIR}/packages" && "$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk) >/dev/null 2>&1; then
+      echo ">> 已生成 packages/packages.adb（未签名索引）"
+    else
+      echo "::warning::apk 索引生成失败，第三方包可能无法安装"
+    fi
+  else
+    echo "::warning::未找到 apk 工具，跳过索引生成"
+  fi
+fi
+
+# -----------------------------------------------------------------------------
+# 8. Build the firmware
 # -----------------------------------------------------------------------------
 cd "${IB_ROOT}"
 make image \
@@ -257,7 +291,7 @@ echo "  Build completed successfully"
 echo "================================================"
 
 # -----------------------------------------------------------------------------
-# 8. Expose outputs
+# 9. Expose outputs
 # -----------------------------------------------------------------------------
 FIRMWARE_DIR="${IB_ROOT}/bin/targets"
 echo "firmware_dir=${FIRMWARE_DIR}" >> "${GITHUB_OUTPUT}"
