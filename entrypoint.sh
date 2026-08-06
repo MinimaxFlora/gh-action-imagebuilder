@@ -59,17 +59,6 @@ echo "  pppoe       : $([[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]] &&
 echo "===================================================="
 
 # -----------------------------------------------------------------------------
-# 1b. Install build dependencies (ImageBuilder needs these on the runner)
-# -----------------------------------------------------------------------------
-echo ">> 安装构建依赖..."
-sudo apt-get update -qq || true
-sudo apt-get install -y -qq \
-  build-essential file libncurses-dev zlib1g-dev gawk git \
-  gettext libssl-dev xsltproc rsync wget unzip \
-  python3 python3-setuptools \
-  zstd || { echo "::warning::部分依赖安装失败，继续尝试构建"; }
-
-# -----------------------------------------------------------------------------
 # 2. Resolve the OpenWrt release version
 #    24 / 25 -> 自动检测本仓库最新 v24.* / v25.* release tag
 #    X.Y.Z   -> 固定版本
