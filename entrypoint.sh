@@ -220,6 +220,7 @@ DEFAULT_PACKAGES=(
   "luci-i18n-base-zh-cn"
   "luci-i18n-firewall-zh-cn"
   "luci-i18n-package-manager-zh-cn"
+  "luci-i18n-ttyd-zh-cn"
 )
 PACKAGES="${DEFAULT_PACKAGES[*]}"
 if [[ -n "${USER_PACKAGES}" ]]; then
