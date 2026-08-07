@@ -1,7 +1,7 @@
 # gh-action-imagebuilder
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/MomoFlora/gh-action-imagebuilder?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/MomoFlora/gh-action-imagebuilder?style=flat-square)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
+![GitHub license](https://img.shields.io/github/license/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 
 GitHub Composite Action：**直接下载 ImageBuilder 压缩包**（无需 Docker）构建定制化
 OpenWrt 固件。自动检测本仓库最新 v24.x / v25.x release，支持预设默认管理 IP、
@@ -17,7 +17,7 @@ rootfs 空间大小、PPPoE 拨号以及第三方插件。
   `x86-64`、`x86-generic`、`x86-geode`、`x86-legacy`、`rockchip-armv8`
 - 🌐 **默认管理 IP** — 通过 `uci-defaults` 在首次启动自动写入
 - 🔌 **PPPoE** — 从 secrets 读取账号密码自动配置拨号；不填则 WAN 保持 DHCP
-- 📦 **第三方插件** — 从 [Extras_Paclages](https://github.com/MomoFlora/Extras_Paclages)
+- 📦 **第三方插件** — 从 [Extras_Paclages](https://github.com/MinimaxFlora/Extras_Paclages)
   自动导入（24.x → `ipk` 分支，25.x → `apk` 分支），支持 `.run` / `.ipk` / `.apk`
 
 ## 使用
@@ -38,7 +38,7 @@ jobs:
 
       - name: Build firmware
         id: build
-        uses: MomoFlora/gh-action-imagebuilder@master
+        uses: MinimaxFlora/gh-action-imagebuilder@master
         with:
           arch: x86-64            # 设备架构
           version: 25             # 24 或 25（自动检测最新 tag）

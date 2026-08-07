@@ -31,7 +31,7 @@ USER_PACKAGES="${INPUT_PACKAGES:-}"
 
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 ACTION_PATH="${GITHUB_ACTION_PATH:?GITHUB_ACTION_PATH is required}"
-REPO="MomoFlora/gh-action-imagebuilder"
+REPO="MinimaxFlora/gh-action-imagebuilder"
 
 # 架构别名（其余架构直接用原名，对应仓库 release 里的资产名）
 declare -A IB_ARCH=(
@@ -180,7 +180,7 @@ uci commit
 
 # 设置编译作者信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="Packaged by MomoFlora"
+NEW_DESCRIPTION="Packaged by MinimaxFlora"
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='\$NEW_DESCRIPTION'/" "\$FILE_PATH"
 
 exit 0
@@ -192,7 +192,7 @@ chmod +x "${UCI_SCRIPT}"
 #    分支内为 .run 自解压安装包（或直接的 .ipk/.apk），直接复制到 packages/ 根目录
 # -----------------------------------------------------------------------------
 git clone --depth=1 --branch "${SRC_BRANCH}" \
-  "https://github.com/MomoFlora/Extras_Paclages.git" "${IB_DIR}/pkg-repo" 2>/dev/null || true
+  "https://github.com/MinimaxFlora/Extras_Paclages.git" "${IB_DIR}/pkg-repo" 2>/dev/null || true
 
 SRC_ARCH_DIR="${IB_DIR}/pkg-repo/${PKG_FOLDER}"
 if [ -d "${SRC_ARCH_DIR}" ]; then

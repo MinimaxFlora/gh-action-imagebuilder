@@ -5,7 +5,7 @@ description: >-
   (no Docker needed). Supports x86 / Rockchip targets, automatic latest
   release detection for the 24.x / 25.x series, default LAN IP, configurable
   rootfs size, PPPoE provisioning and extra packages.
-author: MomoFlora
+author: MinimaxFlora
 
 branding:
   icon: 'cpu'
