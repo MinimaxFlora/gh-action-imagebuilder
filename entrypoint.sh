@@ -117,7 +117,7 @@ URL="https://github.com/${REPO}/releases/download/v${VERSION}/${TARBALL}"
 
 IB_DIR="${WORKSPACE}/.imagebuilder"
 rm -rf "${IB_DIR}"
-mkdir -p "${IB_DIR}/files/etc/uci-defaults" "${IB_DIR}/packages"
+mkdir -p "${IB_DIR}/files/etc/uci-defaults"
 
 echo ">> 下载 ImageBuilder: ${URL}"
 curl -fL --connect-timeout 20 -o "${IB_DIR}/imagebuilder.tar.zst" "${URL}"
@@ -133,8 +133,14 @@ if [[ -z "${IB_ROOT}" ]]; then
 fi
 echo ">> ImageBuilder 目录: ${IB_ROOT}"
 
+# 第三方软件包目录必须 = ImageBuilder 的 PACKAGE_DIR（Makefile: PACKAGE_DIR:=$(TOPDIR)/packages），
+# 即 ${IB_ROOT}/packages。若放到 IB_DIR/packages（IB_ROOT 的兄弟目录），
+# make image 完全读不到，apk/opkg 会报 "unable to select packages"。
+PKG_DIR_PATH="${IB_ROOT}/packages"
+mkdir -p "${PKG_DIR_PATH}"
+
 # runner 用户接管目录权限（tar 内 owner 为 1000）
-sudo chown -R "$(id -u):$(id -g)" "${IB_ROOT}" "${IB_DIR}/files" "${IB_DIR}/packages" 2>/dev/null || true
+sudo chown -R "$(id -u):$(id -g)" "${IB_ROOT}" "${IB_DIR}/files" "${PKG_DIR_PATH}" 2>/dev/null || true
 
 # -----------------------------------------------------------------------------
 # 4. First-boot uci-defaults (LAN IP / PPPoE)
@@ -190,19 +196,19 @@ git clone --depth=1 --branch "${SRC_BRANCH}" \
 
 SRC_ARCH_DIR="${IB_DIR}/pkg-repo/${PKG_FOLDER}"
 if [ -d "${SRC_ARCH_DIR}" ]; then
-  cp -f "${SRC_ARCH_DIR}"/* "${IB_DIR}/packages/" 2>/dev/null || true
+  cp -f "${SRC_ARCH_DIR}"/* "${PKG_DIR_PATH}/" 2>/dev/null || true
   echo ">> 已导入 ${PKG_FOLDER} 架构第三方软件包 (${SRC_BRANCH} 分支):"
-  ls -1 "${IB_DIR}/packages" | sed 's/^/     - /' || true
+  ls -1 "${PKG_DIR_PATH}" | sed 's/^/     - /' || true
 else
   echo "::warning::Extras_Paclages ${SRC_BRANCH} 分支中未找到 ${PKG_FOLDER} 架构目录"
 fi
 
 # ---- 解包 .run 自解压安装包（makeself --noexec 只解压，不执行 install.sh）----
-if ls "${IB_DIR}"/packages/*.run >/dev/null 2>&1; then
+if ls "${PKG_DIR_PATH}"/*.run >/dev/null 2>&1; then
   echo ">> 解包第三方 .run 安装包..."
-  for f in "${IB_DIR}"/packages/*.run; do
+  for f in "${PKG_DIR_PATH}"/*.run; do
     chmod +x "$f"
-    if "$f" --noexec --keep --target "${IB_DIR}/packages/" >/dev/null 2>&1; then
+    if "$f" --noexec --keep --target "${PKG_DIR_PATH}/" >/dev/null 2>&1; then
       rm -f "$f"
       echo ">> 已解包: ${f##*/}"
     else
@@ -214,12 +220,12 @@ fi
 # 修复 apk 文件名与包内版本不一致的问题：
 # 上游 .apk 包内版本用波浪号（26.218.16504~0aec5b1），文件名却是点号（26.218.16504.0aec5b1.apk），
 # apk 按文件名匹配包时对不上，报 "package mentioned in index not found"。
-for f in "${IB_DIR}"/packages/*.apk; do
+for f in "${PKG_DIR_PATH}"/*.apk; do
   [ -e "$f" ] || continue
   base=$(basename "$f")
   new=$(printf "%s" "$base" | sed -E "s/-([0-9]+(\\.[0-9]+)+)\\.([0-9a-f]{6,})(-r[0-9]+)?\\.apk$/-\\1~\\3\\4.apk/")
   if [ "$new" != "$base" ]; then
-    mv -f "$f" "${IB_DIR}/packages/$new"
+    mv -f "$f" "${PKG_DIR_PATH}/$new"
     echo ">> 修正文件名: $base -> $new"
   fi
 done
@@ -252,7 +258,7 @@ echo "    ${PACKAGES}"
 #    25.12 ImageBuilder 内部 mkndx 静默失败（官方 issue #23154），
 #    必须手动生成，否则 apk 报 "unable to select packages"。
 # -----------------------------------------------------------------------------
-if ls "${IB_DIR}"/packages/*.apk >/dev/null 2>&1; then
+if ls "${PKG_DIR_PATH}"/*.apk >/dev/null 2>&1; then
   echo ">> 检测到第三方 .apk 包，准备 apk 索引..."
   # ImageBuilder 自带 host apk 工具
   APK_BIN="${IB_ROOT}/staging_dir/host/bin/apk"
@@ -266,7 +272,7 @@ if ls "${IB_DIR}"/packages/*.apk >/dev/null 2>&1; then
       echo ">> 已关闭 CONFIG_SIGNATURE_CHECK"
     fi
     # 手动生成未签名索引
-    if (cd "${IB_DIR}/packages" && "$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk) >/dev/null 2>&1; then
+    if (cd "${PKG_DIR_PATH}" && "$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk) >/dev/null 2>&1; then
       echo ">> 已生成 packages/packages.adb（未签名索引）"
     else
       echo "::warning::apk 索引生成失败，第三方包可能无法安装"
