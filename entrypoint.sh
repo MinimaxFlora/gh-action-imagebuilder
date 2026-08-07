@@ -31,14 +31,27 @@ USER_PACKAGES="${INPUT_PACKAGES:-}"
 
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 ACTION_PATH="${GITHUB_ACTION_PATH:?GITHUB_ACTION_PATH is required}"
-REPO="MinimaxFlora/gh-action-imagebuilder"
 
-# 架构别名（其余架构直接用原名，对应仓库 release 里的资产名）
+# OpenWrt 官方下载源
+OPENWRT_DL="https://downloads.openwrt.org/releases"
+
+# 架构别名（其余架构直接用原名）
 declare -A IB_ARCH=(
   [x86]="x86-64"
   [rockchip]="rockchip-armv8"
 )
 IB_PREFIX="${IB_ARCH[$ARCH]:-$ARCH}"
+
+# ImageBuilder 官方目录：IB_PREFIX -> target/subtarget
+# 官方 URL 形如 .../targets/<target>/<subtarget>/openwrt-imagebuilder-<ver>-<target>-<subtarget>.Linux-x86_64.tar.zst
+declare -A IB_TARGET=(
+  [x86-64]="x86/64"
+  [x86-generic]="x86/generic"
+  [x86-geode]="x86/geode"
+  [x86-legacy]="x86/legacy"
+  [rockchip-armv8]="rockchip/armv8"
+)
+IB_SUBDIR="${IB_TARGET[$IB_PREFIX]:-$IB_PREFIX}"
 
 # 第三方插件仓库内的架构文件夹名
 declare -A PKG_DIR=(
@@ -65,39 +78,25 @@ echo "===================================================="
 
 # -----------------------------------------------------------------------------
 # 2. Resolve the OpenWrt release version
-#    24 / 25 -> 自动检测本仓库最新 v24.* / v25.* release tag
+#    24 / 25 -> 自动检测 OpenWrt 官方最新 v24.* / v25.* 稳定版
 #    X.Y.Z   -> 固定版本
 # -----------------------------------------------------------------------------
 detect_latest() {
   local series="$1"   # 24 或 25
-  curl -s --connect-timeout 15 \
-    "https://api.github.com/repos/${REPO}/releases?per_page=100" -o /tmp/rel.json || true
-  SERIES="${series}" python3 - <<'PYEOF'
-import json, os, re
-series = os.environ["SERIES"]
-try:
-    d = json.load(open("/tmp/rel.json"))
-except Exception:
-    print(""); raise SystemExit
-vers = []
-pat = re.compile(r'^v(' + series + r'\.\d+\.\d+)$')
-for r in d:
-    m = pat.match(r.get("tag_name", ""))
-    if m:
-        vers.append(m.group(1))
-vers.sort(key=lambda v: [int(x) for x in v.split(".")])
-print(vers[-1] if vers else "")
-PYEOF
+  curl -s --connect-timeout 15 "${OPENWRT_DL}/" \
+    | grep -oE 'href="[0-9]+\.[0-9]+\.[0-9]+/"' \
+    | grep -oE "${series}\.[0-9]+\.[0-9]+" \
+    | sort -V | tail -1
 }
 
 if [[ "${VERSION}" =~ ^(24|25)$ ]]; then
-  echo ">> 自动检测 v${VERSION}.* 系列最新 release tag..."
+  echo ">> 自动检测 OpenWrt v${VERSION}.* 系列最新稳定版..."
   LATEST="$(detect_latest "${VERSION}")"
   if [[ -n "${LATEST}" ]]; then
     VERSION="${LATEST}"
     echo ">> 检测到最新版本: ${VERSION}"
   else
-    echo "::error::未检测到 v${VERSION}.* 系列 release tag，请先在 ${REPO} 创建对应 release"
+    echo "::error::未检测到 OpenWrt v${VERSION}.* 系列版本，请检查官方源 ${OPENWRT_DL}/"
     exit 1
   fi
 fi
@@ -110,10 +109,10 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 3. Download & extract the ImageBuilder tarball from this repo's release
+# 3. Download & extract the ImageBuilder tarball from openwrt.org
 # -----------------------------------------------------------------------------
 TARBALL="openwrt-imagebuilder-${VERSION}-${IB_PREFIX}.Linux-x86_64.tar.zst"
-URL="https://github.com/${REPO}/releases/download/v${VERSION}/${TARBALL}"
+URL="${OPENWRT_DL}/${VERSION}/targets/${IB_SUBDIR}/${TARBALL}"
 
 IB_DIR="${WORKSPACE}/.imagebuilder"
 rm -rf "${IB_DIR}"
