@@ -71,6 +71,13 @@ inputs:
     required: false
     default: ''
 
+  root_password:
+    description: >-
+      Set the root password for the firmware (applied on first boot via
+      uci-defaults). Leave empty to keep the default (no password).
+    required: false
+    default: ''
+
 outputs:
   firmware_dir:
     description: >-
@@ -92,6 +99,7 @@ runs:
         INPUT_LAN_IP: ${{ inputs.lan_ip }}
         INPUT_PPPOE_ACCOUNT: ${{ inputs.pppoe_account }}
         INPUT_PPPOE_PASSWORD: ${{ inputs.pppoe_password }}
+        INPUT_ROOT_PASSWORD: ${{ inputs.root_password }}
         INPUT_PACKAGES: ${{ inputs.packages }}
       run: |
         bash "${{ github.action_path }}/entrypoint.sh"

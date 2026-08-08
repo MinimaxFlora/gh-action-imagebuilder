@@ -27,6 +27,7 @@ ROOTFS_PARTSIZE="${INPUT_ROOTFS_PARTSIZE:-2048}"
 LAN_IP="${INPUT_LAN_IP:-192.168.1.1}"
 PPPOE_ACCOUNT="${INPUT_PPPOE_ACCOUNT:-}"
 PPPOE_PASSWORD="${INPUT_PPPOE_PASSWORD:-}"
+ROOT_PASSWORD="${INPUT_ROOT_PASSWORD:-}"
 USER_PACKAGES="${INPUT_PACKAGES:-}"
 
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
@@ -161,6 +162,15 @@ uci set network.wan.username='${PPPOE_ACCOUNT}'
 uci set network.wan.password='${PPPOE_PASSWORD}'"
 fi
 
+# 可选片段：root 密码（为空则不设置，保持默认空密码）
+ROOT_PW_BLOCK=""
+if [[ -n "${ROOT_PASSWORD}" ]]; then
+  # 单引号转义，避免破坏生成的脚本
+  ROOT_PW_SAFE="$(printf '%s' "${ROOT_PASSWORD}" | sed "s/'/'\\\\''/g")"
+  ROOT_PW_BLOCK="ROOT_PASSWORD='${ROOT_PW_SAFE}'
+(echo \"\$ROOT_PASSWORD\"; sleep 1; echo \"\$ROOT_PASSWORD\") | passwd root"
+fi
+
 # ANSI 转义（SSH 横幅用）
 ESC=$'\033'
 
@@ -172,6 +182,8 @@ cat > "${UCI_SCRIPT}" <<EOF
 ${LAN_BLOCK}
 
 ${PPPOE_BLOCK}
+
+${ROOT_PW_BLOCK}
 
 uci commit network
 
@@ -214,6 +226,9 @@ if [[ -n "${LAN_IP}" ]]; then
 fi
 if [[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]]; then
   echo ">> 已写入 PPPoE 拨号配置"
+fi
+if [[ -n "${ROOT_PASSWORD}" ]]; then
+  echo ">> 已写入 root 密码（首次启动生效）"
 fi
 echo ">> 已写入 SSH 登录横幅 /etc/banner"
 

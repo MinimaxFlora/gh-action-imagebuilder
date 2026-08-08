@@ -64,6 +64,7 @@ jobs:
 | `rootfs_partsize` | ❌ | `2048` | 软件包分区大小（MB） |
 | `lan_ip` | ❌ | `192.168.1.1` | 默认管理 IP（写入 uci-defaults） |
 | `packages` | ❌ | *(空)* | 额外插件，**空格分隔** |
+| `root_password` | ❌ | *(空)* | 固件 root 密码（首次启动生效）；留空则保持默认空密码 |
 
 ## Secrets（密钥）
 
