@@ -28,6 +28,22 @@ uci set system.@system[0].hostname='ZeroWrt'
 uci commit system
 
 # 换源：OpenWrt 官方源 -> 腾讯云镜像（加速软件包下载）
-sed -i 's,downloads.openwrt.org,mirrors.cloud.tencent.com/openwrt,g' /etc/apk/repositories.d/distfeeds.list
+if [ -f /etc/apk/repositories.d/distfeeds.list ]; then
+  sed -i 's,downloads.openwrt.org,mirrors.cloud.tencent.com/openwrt,g' /etc/apk/repositories.d/distfeeds.list
+elif [ -f /etc/opkg/distfeeds.conf ]; then
+  sed -i 's,downloads.openwrt.org,mirrors.cloud.tencent.com/openwrt,g' /etc/opkg/distfeeds.conf
+fi
+
+# 配置 Extras_Paclages 插件源（密钥已预置到镜像）
+if command -v apk >/dev/null 2>&1; then
+  # ---- OpenWrt 25.x (apk) ----
+  echo "https://raw.githubusercontent.com/MinimaxFlora/Extras_Paclages/apk/$(cat /etc/apk/arch)/packages.adb" >> /etc/apk/repositories.d/customfeeds.list
+  apk update || true
+elif command -v opkg >/dev/null 2>&1; then
+  # ---- OpenWrt 24.x (opkg) ----
+  . /etc/openwrt_release
+  echo "src/gz openwrt_extras https://raw.githubusercontent.com/MinimaxFlora/Extras_Paclages/ipk/${DISTRIB_ARCH}" >> /etc/opkg/customfeeds.conf
+  opkg update || true
+fi
 
 exit 0
