@@ -237,29 +237,13 @@ if (( ${#RUN_FILES[@]} > 0 )); then
     fi
   done
 
-  # 解压后重新扫描：解压出的 .ipk/.apk 同样参与后续处理（文件名修正/索引）
+  # 解压后重新扫描：解压出的 .ipk/.apk 同样参与后续处理（apk 索引生成）
   # 注：真实 .run 内容平铺在目标目录（packages/ 根），不会出现子目录
   shopt -s nullglob
   PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
   shopt -u nullglob
 else
   echo ">> 未检测到 .run，无需解压，${EXPECTED_EXT} 包直接使用"
-fi
-
-# 25.x (apk) 专用处理：文件名版本修正（24.x 的 ipk 无此问题）
-if [[ "${EXPECTED_EXT}" == ".apk" ]]; then
-  # 修复 apk 文件名与包内版本不一致的问题：
-  # 上游 .apk 包内版本用波浪号（26.218.16504~0aec5b1），文件名却是点号（26.218.16504.0aec5b1.apk），
-  # apk 按文件名匹配包时对不上，报 "package mentioned in index not found"。
-  for f in "${PKG_FILES[@]}"; do
-  [ -e "$f" ] || continue
-  base=$(basename "$f")
-  new=$(printf "%s" "$base" | sed -E "s/-([0-9]+(\\.[0-9]+)+)\\.([0-9a-f]{6,})(-r[0-9]+)?\\.apk$/-\\1~\\3\\4.apk/")
-    if [ "$new" != "$base" ]; then
-      mv -f "$f" "${PKG_DIR_PATH}/$new"
-      echo ">> 修正文件名: $base -> $new"
-    fi
-  done
 fi
 
 # -----------------------------------------------------------------------------
