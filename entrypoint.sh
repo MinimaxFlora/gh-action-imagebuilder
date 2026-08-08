@@ -188,13 +188,14 @@ chmod +x "${UCI_SCRIPT}"
 # SSH 登录横幅：静态文件直接复制进 files/etc/banner
 cp -f "${ACTION_PATH}/files/etc/banner" "${IB_DIR}/files/etc/banner"
 
-# 签名密钥：按版本只保留对应的（25.x → apk 密钥，24.x → ipk 密钥）
-# 密钥文件提前放在仓库 files/ 下，打包后落在 /etc/apk/keys/ 或 /etc/opkg/keys/
+# 签名密钥：按版本复制到指定位置（25.x → /etc/apk/keys/key-build.pem，24.x → /etc/opkg/keys/key-build.pub）
 if [[ "${SRC_BRANCH}" == "apk" ]]; then
-  rm -rf "${IB_DIR}/files/etc/opkg"
+  mkdir -p "${IB_DIR}/files/etc/apk/keys"
+  cp -f "${ACTION_PATH}/key/key-build.pem" "${IB_DIR}/files/etc/apk/keys/key-build.pem"
   echo ">> 已预置 apk 签名密钥 (25.x): /etc/apk/keys/key-build.pem"
 else
-  rm -rf "${IB_DIR}/files/etc/apk"
+  mkdir -p "${IB_DIR}/files/etc/opkg/keys"
+  cp -f "${ACTION_PATH}/key/key-build.pub" "${IB_DIR}/files/etc/opkg/keys/key-build.pub"
   echo ">> 已预置 ipk 签名密钥 (24.x): /etc/opkg/keys/key-build.pub"
 fi
 
