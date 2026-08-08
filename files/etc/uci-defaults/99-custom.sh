@@ -30,7 +30,4 @@ uci commit system
 # 换源：OpenWrt 官方源 -> 腾讯云镜像（加速软件包下载）
 sed -i 's,downloads.openwrt.org,mirrors.cloud.tencent.com/openwrt,g' /etc/apk/repositories.d/distfeeds.list
 
-# 重试下载索引（换源后刷新）
-apk update
-
 exit 0

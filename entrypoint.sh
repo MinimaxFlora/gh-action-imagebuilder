@@ -265,6 +265,7 @@ DEFAULT_PACKAGES=(
   "kmod-tun"
   "kmod-inet-diag"
   "kmod-nft-tproxy"
+  "kmod-nft-socket"
   "luci-i18n-base-zh-cn"
   "luci-i18n-firewall-zh-cn"
   "luci-i18n-package-manager-zh-cn"
