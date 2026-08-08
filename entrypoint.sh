@@ -237,19 +237,8 @@ if (( ${#RUN_FILES[@]} > 0 )); then
     fi
   done
 
-  # 解压后重新检测：.run 内可能包着期望格式的包
-  shopt -s nullglob
-  PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
-  shopt -u nullglob
-
-  # 若 .run 把内容解到了子目录，将子目录中的期望格式包提升到 packages 根目录
-  # （opkg/apk 只扫描 packages 根目录）
-  while IFS= read -r -d '' nested; do
-    mv -f "$nested" "${PKG_DIR_PATH}/$(basename "$nested")"
-    echo ">> 已提升子目录软件包: ${nested#${PKG_DIR_PATH}/}"
-  done < <(find "${PKG_DIR_PATH}" -mindepth 2 -type f -name "*${EXPECTED_EXT}" -print0)
-
-  # 提升后再检测一次
+  # 解压后重新扫描：解压出的 .ipk/.apk 同样参与后续处理（文件名修正/索引）
+  # 注：真实 .run 内容平铺在目标目录（packages/ 根），不会出现子目录
   shopt -s nullglob
   PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
   shopt -u nullglob
