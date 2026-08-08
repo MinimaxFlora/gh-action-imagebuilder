@@ -188,14 +188,14 @@ chmod +x "${UCI_SCRIPT}"
 # SSH 登录横幅：静态文件直接复制进 files/etc/banner
 cp -f "${ACTION_PATH}/files/etc/banner" "${IB_DIR}/files/etc/banner"
 
-# 签名密钥：按版本复制到指定位置（25.x → /etc/apk/keys/key-build.pem，24.x → /etc/opkg/keys/key-build.pub）
+# 签名密钥：按版本 cp 到 ImageBuilder 的 files 对应位置（源在仓库 files/ 下，与 banner 同模式）
 if [[ "${SRC_BRANCH}" == "apk" ]]; then
   mkdir -p "${IB_DIR}/files/etc/apk/keys"
-  cp -f "${ACTION_PATH}/key/key-build.pem" "${IB_DIR}/files/etc/apk/keys/key-build.pem"
+  cp -f "${ACTION_PATH}/files/etc/apk/keys/key-build.pem" "${IB_DIR}/files/etc/apk/keys/key-build.pem"
   echo ">> 已预置 apk 签名密钥 (25.x): /etc/apk/keys/key-build.pem"
 else
   mkdir -p "${IB_DIR}/files/etc/opkg/keys"
-  cp -f "${ACTION_PATH}/key/key-build.pub" "${IB_DIR}/files/etc/opkg/keys/key-build.pub"
+  cp -f "${ACTION_PATH}/files/etc/opkg/keys/key-build.pub" "${IB_DIR}/files/etc/opkg/keys/key-build.pub"
   echo ">> 已预置 ipk 签名密钥 (24.x): /etc/opkg/keys/key-build.pub"
 fi
 
