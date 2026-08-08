@@ -197,17 +197,17 @@ fi
 
 # -----------------------------------------------------------------------------
 # 5. Import third-party packages into packages/
-#    分支内可能为 .run 自解压安装包，或直接的 ipk/apk，统一复制到 packages/ 根目录
-#    包格式由版本决定：24.x -> ipk，25.x -> apk（互斥，不会同时出现）
-#    检测逻辑：有 .run 才解包，否则跳过；解包后按期望格式重新扫描
+#    克隆 Extras_Paclages 对应分支，把架构同名文件夹（如 x86_64）内的文件
+#    移动进 packages/ 根目录；再检测 packages/ 全部内容：
+#    有 .run 则执行解压，否则无需处理直接使用
 # -----------------------------------------------------------------------------
 git clone --depth=1 --branch "${SRC_BRANCH}" \
   "https://github.com/MinimaxFlora/Extras_Paclages.git" "${IB_DIR}/pkg-repo" 2>/dev/null || true
 
 SRC_ARCH_DIR="${IB_DIR}/pkg-repo/${PKG_FOLDER}"
 if [ -d "${SRC_ARCH_DIR}" ]; then
-  cp -f "${SRC_ARCH_DIR}"/* "${PKG_DIR_PATH}/" 2>/dev/null || true
-  echo ">> 已导入 ${PKG_FOLDER} 架构第三方软件包 (${SRC_BRANCH} 分支):"
+  mv -f "${SRC_ARCH_DIR}"/* "${PKG_DIR_PATH}/" 2>/dev/null || true
+  echo ">> 已移动 ${PKG_FOLDER} 架构第三方软件包 (${SRC_BRANCH} 分支) 到 packages/:"
   ls -1 "${PKG_DIR_PATH}" | sed 's/^/     - /' || true
 else
   echo "::warning::Extras_Paclages ${SRC_BRANCH} 分支中未找到 ${PKG_FOLDER} 架构目录"
@@ -216,38 +216,28 @@ fi
 # ---- 包格式由版本决定：24.x -> ipk，25.x -> apk（互斥，不会同时出现）----
 EXPECTED_EXT=".${SRC_BRANCH}"
 
-# ---- 检测第三方软件包类型：.run / 期望格式包 ----
+# ---- 检测 packages/ 目录下全部内容：.run / 期望格式包 ----
 shopt -s nullglob
 RUN_FILES=( "${PKG_DIR_PATH}"/*.run )
 PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
 shopt -u nullglob
 
-echo ">> 第三方软件包检测: ${#RUN_FILES[@]} 个 .run | ${#PKG_FILES[@]} 个 ${EXPECTED_EXT}"
+echo ">> packages/ 内容检测: ${#RUN_FILES[@]} 个 .run | ${#PKG_FILES[@]} 个 ${EXPECTED_EXT}"
 
-# 若混入其他格式的文件（理论上不会出现），给出警告
-OTHER_EXT=".apk"
-[[ "${EXPECTED_EXT}" == ".apk" ]] && OTHER_EXT=".ipk"
-shopt -s nullglob
-OTHER_FILES=( "${PKG_DIR_PATH}"/*"${OTHER_EXT}" )
-shopt -u nullglob
-if (( ${#OTHER_FILES[@]} > 0 )); then
-  echo "::warning::检测到 ${#OTHER_FILES[@]} 个 ${OTHER_EXT} 文件，但 v${VERSION} 使用 ${EXPECTED_EXT}，已忽略"
-fi
-
-# ---- 解包 .run 自解压安装包（仅当存在 .run 时执行；makeself --noexec 只解压，不执行 install.sh）----
+# ---- 有 .run 才执行解压；否则文件已就位，直接使用 ----
 if (( ${#RUN_FILES[@]} > 0 )); then
-  echo ">> 检测到 .run 安装包，开始解包..."
+  echo ">> 检测到 .run 安装包，开始解压..."
   for f in "${RUN_FILES[@]}"; do
     chmod +x "$f"
     if "$f" --noexec --keep --target "${PKG_DIR_PATH}/" >/dev/null 2>&1; then
       rm -f "$f"
-      echo ">> 已解包: ${f##*/}"
+      echo ">> 已解压: ${f##*/}"
     else
       echo "::warning::解包失败: ${f}"
     fi
   done
 
-  # 解包后重新检测：.run 内可能包着期望格式的包
+  # 解压后重新检测：.run 内可能包着期望格式的包
   shopt -s nullglob
   PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
   shopt -u nullglob
@@ -264,7 +254,7 @@ if (( ${#RUN_FILES[@]} > 0 )); then
   PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
   shopt -u nullglob
 else
-  echo ">> 未检测到 .run 安装包，跳过解包（${EXPECTED_EXT} 包直接使用）"
+  echo ">> 未检测到 .run，无需解压，${EXPECTED_EXT} 包直接使用"
 fi
 
 # 25.x (apk) 专用处理：文件名版本修正（24.x 的 ipk 无此问题）
