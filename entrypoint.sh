@@ -197,7 +197,9 @@ fi
 
 # -----------------------------------------------------------------------------
 # 5. Import third-party packages into packages/
-#    分支内为 .run 自解压安装包（或直接的 .ipk/.apk），直接复制到 packages/ 根目录
+#    分支内可能为 .run 自解压安装包，或直接的 ipk/apk，统一复制到 packages/ 根目录
+#    包格式由版本决定：24.x -> ipk，25.x -> apk（互斥，不会同时出现）
+#    检测逻辑：有 .run 才解包，否则跳过；解包后按期望格式重新扫描
 # -----------------------------------------------------------------------------
 git clone --depth=1 --branch "${SRC_BRANCH}" \
   "https://github.com/MinimaxFlora/Extras_Paclages.git" "${IB_DIR}/pkg-repo" 2>/dev/null || true
@@ -211,10 +213,31 @@ else
   echo "::warning::Extras_Paclages ${SRC_BRANCH} 分支中未找到 ${PKG_FOLDER} 架构目录"
 fi
 
-# ---- 解包 .run 自解压安装包（makeself --noexec 只解压，不执行 install.sh）----
-if ls "${PKG_DIR_PATH}"/*.run >/dev/null 2>&1; then
-  echo ">> 解包第三方 .run 安装包..."
-  for f in "${PKG_DIR_PATH}"/*.run; do
+# ---- 包格式由版本决定：24.x -> ipk，25.x -> apk（互斥，不会同时出现）----
+EXPECTED_EXT=".${SRC_BRANCH}"
+
+# ---- 检测第三方软件包类型：.run / 期望格式包 ----
+shopt -s nullglob
+RUN_FILES=( "${PKG_DIR_PATH}"/*.run )
+PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
+shopt -u nullglob
+
+echo ">> 第三方软件包检测: ${#RUN_FILES[@]} 个 .run | ${#PKG_FILES[@]} 个 ${EXPECTED_EXT}"
+
+# 若混入其他格式的文件（理论上不会出现），给出警告
+OTHER_EXT=".apk"
+[[ "${EXPECTED_EXT}" == ".apk" ]] && OTHER_EXT=".ipk"
+shopt -s nullglob
+OTHER_FILES=( "${PKG_DIR_PATH}"/*"${OTHER_EXT}" )
+shopt -u nullglob
+if (( ${#OTHER_FILES[@]} > 0 )); then
+  echo "::warning::检测到 ${#OTHER_FILES[@]} 个 ${OTHER_EXT} 文件，但 v${VERSION} 使用 ${EXPECTED_EXT}，已忽略"
+fi
+
+# ---- 解包 .run 自解压安装包（仅当存在 .run 时执行；makeself --noexec 只解压，不执行 install.sh）----
+if (( ${#RUN_FILES[@]} > 0 )); then
+  echo ">> 检测到 .run 安装包，开始解包..."
+  for f in "${RUN_FILES[@]}"; do
     chmod +x "$f"
     if "$f" --noexec --keep --target "${PKG_DIR_PATH}/" >/dev/null 2>&1; then
       rm -f "$f"
@@ -223,20 +246,42 @@ if ls "${PKG_DIR_PATH}"/*.run >/dev/null 2>&1; then
       echo "::warning::解包失败: ${f}"
     fi
   done
+
+  # 解包后重新检测：.run 内可能包着期望格式的包
+  shopt -s nullglob
+  PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
+  shopt -u nullglob
+
+  # 若 .run 把内容解到了子目录，将子目录中的期望格式包提升到 packages 根目录
+  # （opkg/apk 只扫描 packages 根目录）
+  while IFS= read -r -d '' nested; do
+    mv -f "$nested" "${PKG_DIR_PATH}/$(basename "$nested")"
+    echo ">> 已提升子目录软件包: ${nested#${PKG_DIR_PATH}/}"
+  done < <(find "${PKG_DIR_PATH}" -mindepth 2 -type f -name "*${EXPECTED_EXT}" -print0)
+
+  # 提升后再检测一次
+  shopt -s nullglob
+  PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
+  shopt -u nullglob
+else
+  echo ">> 未检测到 .run 安装包，跳过解包（${EXPECTED_EXT} 包直接使用）"
 fi
 
-# 修复 apk 文件名与包内版本不一致的问题：
-# 上游 .apk 包内版本用波浪号（26.218.16504~0aec5b1），文件名却是点号（26.218.16504.0aec5b1.apk），
-# apk 按文件名匹配包时对不上，报 "package mentioned in index not found"。
-for f in "${PKG_DIR_PATH}"/*.apk; do
+# 25.x (apk) 专用处理：文件名版本修正（24.x 的 ipk 无此问题）
+if [[ "${EXPECTED_EXT}" == ".apk" ]]; then
+  # 修复 apk 文件名与包内版本不一致的问题：
+  # 上游 .apk 包内版本用波浪号（26.218.16504~0aec5b1），文件名却是点号（26.218.16504.0aec5b1.apk），
+  # apk 按文件名匹配包时对不上，报 "package mentioned in index not found"。
+  for f in "${PKG_FILES[@]}"; do
   [ -e "$f" ] || continue
   base=$(basename "$f")
   new=$(printf "%s" "$base" | sed -E "s/-([0-9]+(\\.[0-9]+)+)\\.([0-9a-f]{6,})(-r[0-9]+)?\\.apk$/-\\1~\\3\\4.apk/")
-  if [ "$new" != "$base" ]; then
-    mv -f "$f" "${PKG_DIR_PATH}/$new"
-    echo ">> 修正文件名: $base -> $new"
-  fi
-done
+    if [ "$new" != "$base" ]; then
+      mv -f "$f" "${PKG_DIR_PATH}/$new"
+      echo ">> 修正文件名: $base -> $new"
+    fi
+  done
+fi
 
 # -----------------------------------------------------------------------------
 # 6. Assemble the package list
@@ -266,8 +311,8 @@ echo "    ${PACKAGES}"
 #    25.12 ImageBuilder 内部 mkndx 静默失败（官方 issue #23154），
 #    必须手动生成，否则 apk 报 "unable to select packages"。
 # -----------------------------------------------------------------------------
-if ls "${PKG_DIR_PATH}"/*.apk >/dev/null 2>&1; then
-  echo ">> 检测到第三方 .apk 包，准备 apk 索引..."
+if [[ "${EXPECTED_EXT}" == ".apk" ]] && (( ${#PKG_FILES[@]} > 0 )); then
+  echo ">> 检测到 ${#PKG_FILES[@]} 个第三方 .apk 包，准备 apk 索引..."
   # ImageBuilder 自带 host apk 工具
   APK_BIN="${IB_ROOT}/staging_dir/host/bin/apk"
   if [ ! -x "$APK_BIN" ]; then
