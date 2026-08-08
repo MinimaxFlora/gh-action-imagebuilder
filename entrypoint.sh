@@ -291,6 +291,47 @@ echo ">> 最终软件包列表:"
 echo "    ${PACKAGES}"
 
 # -----------------------------------------------------------------------------
+# 6.5 若选择了 luci-app-openclash，则内置 mihomo 内核 + GeoIP/GeoSite 规则数据
+# -----------------------------------------------------------------------------
+if echo "${PACKAGES}" | grep -q "luci-app-openclash"; then
+  echo "✅ 已选择 luci-app-openclash，内置 OpenClash 内核与规则数据"
+  mkdir -p "${IB_DIR}/files/etc/openclash/core"
+
+  # 按架构选择 mihomo 内核
+  case "${ARCH}" in
+    x86-*)
+      META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-amd64-v1.tar.gz"
+      ;;
+    rockchip-*)
+      META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz"
+      ;;
+    *)
+      echo "::warning::不支持的架构 ${ARCH}，跳过 OpenClash 内核下载"
+      META_URL=""
+      ;;
+  esac
+
+  if [ -n "${META_URL}" ]; then
+    echo ">> 下载 mihomo 内核: ${META_URL}"
+    if wget -qO- "${META_URL}" | tar xOvz > "${IB_DIR}/files/etc/openclash/core/clash_meta" 2>/dev/null; then
+      chmod +x "${IB_DIR}/files/etc/openclash/core/clash_meta"
+      echo ">> 内核大小: $(wc -c < "${IB_DIR}/files/etc/openclash/core/clash_meta") 字节"
+    else
+      echo "::warning::OpenClash 内核下载失败"
+    fi
+  fi
+
+  # GeoIP / GeoSite 规则数据
+  echo ">> 下载 GeoIP / GeoSite 规则数据..."
+  wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -O "${IB_DIR}/files/etc/openclash/GeoIP.dat" \
+    && echo ">> GeoIP.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoIP.dat") 字节" \
+    || echo "::warning::GeoIP.dat 下载失败"
+  wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -O "${IB_DIR}/files/etc/openclash/GeoSite.dat" \
+    && echo ">> GeoSite.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoSite.dat") 字节" \
+    || echo "::warning::GeoSite.dat 下载失败"
+fi
+
+# -----------------------------------------------------------------------------
 # 7. OpenWrt 25.x (apk)：生成 packages.adb 索引并关闭签名校验
 #    25.12 ImageBuilder 内部 mkndx 静默失败（官方 issue #23154），
 #    必须手动生成，否则 apk 报 "unable to select packages"。
