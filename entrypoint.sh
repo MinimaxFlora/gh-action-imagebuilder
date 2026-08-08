@@ -272,6 +272,7 @@ DEFAULT_PACKAGES=(
   "apk-openssl"
   "libustream-openssl"
   "luci"
+  "luci-compat"
   "ip-full"
   "kmod-tun"
   "kmod-inet-diag"
