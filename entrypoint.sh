@@ -256,6 +256,10 @@ fi
 DEFAULT_PACKAGES=(
   "-dnsmasq"
   "dnsmasq-full"
+  "-apk-mbedtls"
+  "-libustream-mbedtls"
+  "apk-openssl"
+  "libustream-openssl"
   "luci"
   "ip-full"
   "kmod-tun"
@@ -266,24 +270,6 @@ DEFAULT_PACKAGES=(
   "luci-i18n-package-manager-zh-cn"
   "luci-i18n-ttyd-zh-cn"
 )
-
-# 默认 SSL 后端：mbedtls -> openssl（openclash/passwall 等插件需要 openssl）
-# 包名随分支不同：25.x (apk) 用 apk- 前缀，24.x (ipk/opkg) 用 lib- 前缀
-if [[ "${SRC_BRANCH}" == "apk" ]]; then
-  DEFAULT_PACKAGES+=(
-    "-apk-mbedtls"
-    "-libustream-mbedtls"
-    "apk-openssl"
-    "libustream-openssl"
-  )
-else
-  DEFAULT_PACKAGES+=(
-    "-libmbedtls"
-    "-libustream-mbedtls"
-    "libopenssl"
-    "libustream-openssl"
-  )
-fi
 PACKAGES="${DEFAULT_PACKAGES[*]}"
 if [[ -n "${USER_PACKAGES}" ]]; then
   PACKAGES="${PACKAGES} ${USER_PACKAGES}"
