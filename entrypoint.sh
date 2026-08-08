@@ -161,6 +161,9 @@ uci set network.wan.username='${PPPOE_ACCOUNT}'
 uci set network.wan.password='${PPPOE_PASSWORD}'"
 fi
 
+# ANSI 转义（SSH 横幅用）
+ESC=$'\033'
+
 # 一次性生成完整 uci-defaults 脚本（可选片段为空时自动跳过）
 cat > "${UCI_SCRIPT}" <<EOF
 #!/bin/sh
@@ -184,6 +187,19 @@ FILE_PATH="/etc/openwrt_release"
 NEW_DESCRIPTION="Packaged by MinimaxFlora"
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='\$NEW_DESCRIPTION'/" "\$FILE_PATH"
 
+# 设置 SSH 登录横幅（ANSI 彩色，首次启动生成）
+cat > /etc/banner <<'BANNER'
+${ESC}[1;34m
+${ESC}[1;34m███████╗███████╗██████╗ ██████╗ ██╗ ██╗██████╗ ████████╗${ESC}[0m
+${ESC}[1;36m╚══███╔╝██╔════╝██╔══██╗██╔═══██╗██║ ██║██╔══██╗╚══██╔══╝${ESC}[0m
+${ESC}[1;36m ███╔╝ █████╗ ██████╔╝██║ ██║██║ █╗ ██║██████╔╝ ██║${ESC}[0m
+${ESC}[1;33m ███╔╝ ██╔══╝ ██╔══██╗██║ ██║██║███╗██║██╔══██╗ ██║${ESC}[0m
+${ESC}[1;33m███████╗███████╗██║ ██║╚██████╔╝╚███╔███╔╝██║ ██║ ██║${ESC}[0m
+${ESC}[1;33m╚══════╝╚══════╝╚═╝ ╚═╝ ╚═════╝ ╚══╝╚══╝ ╚═╝ ╚═╝ ╚═╝${ESC}[0m
+${ESC}[1;33m Open Source · Tailored Experience · High Performance${ESC}[0m
+${ESC}[0;37m────────────────────────────────────────────────────────────${ESC}[0m
+BANNER
+
 exit 0
 EOF
 chmod +x "${UCI_SCRIPT}"
@@ -194,23 +210,6 @@ fi
 if [[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]]; then
   echo ">> 已写入 PPPoE 拨号配置"
 fi
-
-# -----------------------------------------------------------------------------
-# 4.1 SSH 登录横幅 /etc/banner（ANSI 彩色）
-# -----------------------------------------------------------------------------
-BANNER_FILE="${IB_DIR}/files/etc/banner"
-mkdir -p "$(dirname "${BANNER_FILE}")"
-{
-  printf '\033[1;34m\n'
-  printf '\033[1;34m███████╗███████╗██████╗ ██████╗ ██╗ ██╗██████╗ ████████╗\033[0m\n'
-  printf '\033[1;36m╚══███╔╝██╔════╝██╔══██╗██╔═══██╗██║ ██║██╔══██╗╚══██╔══╝\033[0m\n'
-  printf '\033[1;36m ███╔╝ █████╗ ██████╔╝██║ ██║██║ █╗ ██║██████╔╝ ██║\033[0m\n'
-  printf '\033[1;33m ███╔╝ ██╔══╝ ██╔══██╗██║ ██║██║███╗██║██╔══██╗ ██║\033[0m\n'
-  printf '\033[1;33m███████╗███████╗██║ ██║╚██████╔╝╚███╔███╔╝██║ ██║ ██║\033[0m\n'
-  printf '\033[1;33m╚══════╝╚══════╝╚═╝ ╚═╝ ╚═════╝ ╚══╝╚══╝ ╚═╝ ╚═╝ ╚═╝\033[0m\n'
-  printf '\033[1;33m Open Source · Tailored Experience · High Performance\033[0m\n'
-  printf '\033[0;37m────────────────────────────────────────────────────────────\033[0m\n'
-} > "${BANNER_FILE}"
 echo ">> 已写入 SSH 登录横幅 /etc/banner"
 
 # -----------------------------------------------------------------------------
