@@ -18,7 +18,8 @@ PPPoE 拨号以及第三方插件。
 - 🌐 **默认管理 IP** — 通过 `uci-defaults` 在首次启动自动写入
 - 🔌 **PPPoE** — 从 secrets 读取账号密码自动配置拨号；不填则 WAN 保持 DHCP
 - 📦 **第三方插件** — 从 [Extras_Paclages](https://github.com/MinimaxFlora/Extras_Paclages)
-  自动导入（24.x → `ipk` 分支，25.x → `apk` 分支），支持 `.run` / `.ipk` / `.apk`
+  自动导入：24.x → `ipk` 分支，25.x → `apk` 分支，按架构分类直接存放
+  `.ipk` / `.apk` 插件包（兼容旧的 `.run` 自解压包，有 `.run` 时自动解压）
 
 ## 使用
 
@@ -77,14 +78,36 @@ jobs:
 | ---- | ---- |
 | `firmware_dir` | 固件输出目录（`<workspace>/.imagebuilder/.../bin/targets`） |
 
+## 第三方插件（Extras_Paclages）
+
+插件仓库 [Extras_Paclages](https://github.com/MinimaxFlora/Extras_Paclages) 按分支 + 架构组织：
+
+```
+apk (25.x) / ipk (24.x)
+├── x86_64/              # x86-64 架构 → 直接放 .ipk / .apk 插件包
+├── aarch64_generic/     # rockchip armv8（如 nanopi R4S 等）
+└── aarch64_cortex-a53/  # 其他 aarch64 设备
+```
+
+构建时自动导入与目标架构匹配的文件夹：
+
+| 架构（arch 参数） | 导入文件夹 |
+| ---------------- | ---------- |
+| `x86-64` 等 x86 系 | `x86_64/` |
+| `rockchip-armv8` | `aarch64_generic/` |
+
+> 兼容性：分支内若存在 `.run` 自解压包，会自动解压（`--noexec` 只解压不执行脚本），
+> 产物直接平铺在 `packages/` 根目录。
+
 ## 工作原理
 
 1. 根据 `version` 自动检测 OpenWrt 官方最新稳定版（抓取 `downloads.openwrt.org/releases/` 目录）
 2. 从官方下载对应架构的 `openwrt-imagebuilder-<版本>-<架构>.Linux-x86_64.tar.zst`
 3. 解压 ImageBuilder，写入 uci-defaults（LAN IP / PPPoE）
-4. 克隆 Extras_Paclages 对应分支，导入第三方插件到 `packages/`
-5. `.run` 自动解包；25.x 自动生成 `packages.adb` 索引并关闭签名校验
-6. `make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=...`
+4. 克隆 Extras_Paclages 对应分支（24.x → `ipk`，25.x → `apk`）
+5. 把架构同名文件夹内的 `.ipk` / `.apk` 包直接**移动**进 `packages/`（有 `.run` 则自动解压）
+6. 25.x 自动生成 `packages.adb` 索引并关闭签名校验
+7. `make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=...`
 
 > 说明：ImageBuilder 直接从 OpenWrt 官方下载，官方发布新版本后无需任何手动维护，
 > 自动检测并构建最新固件。
