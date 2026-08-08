@@ -182,10 +182,15 @@ uci delete ttyd.@ttyd[0].interface
 uci set dropbear.@dropbear[0].Interface=''
 uci commit
 
-# 设置编译作者信息
+# 设置系统标识（ZeroWrt 版本信息）
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="Packaged by MinimaxFlora"
-sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='\$NEW_DESCRIPTION'/" "\$FILE_PATH"
+sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='ZeroWrt-\$(date +%Y%m%d)'/g" "\$FILE_PATH"
+sed -i "s/DISTRIB_REVISION='[^']*'/DISTRIB_REVISION=' By MinimaxFlora'/g" "\$FILE_PATH"
+sed -i "s|^OPENWRT_RELEASE=\".*\"|OPENWRT_RELEASE=\"ZeroWrt 标准版 @R\$(date +%Y%m%d) BY MinimaxFlora\"|" /usr/lib/os-release
+
+# 设置主机名
+uci set system.@system[0].hostname='ZeroWrt'
+uci commit system
 
 # 设置 SSH 登录横幅（ANSI 彩色，首次启动生成）
 cat > /etc/banner <<'BANNER'
