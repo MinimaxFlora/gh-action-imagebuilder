@@ -255,9 +255,9 @@ fi
 # -----------------------------------------------------------------------------
 DEFAULT_PACKAGES=(
   "-dnsmasq"
-  "dnsmasq-full"
   "-apk-mbedtls"
   "-libustream-mbedtls"
+  "dnsmasq-full"
   "apk-openssl"
   "libustream-openssl"
   "luci"
