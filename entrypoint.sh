@@ -291,13 +291,15 @@ echo ">> 最终软件包列表:"
 echo "    ${PACKAGES}"
 
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # 6.5 若选择了 luci-app-openclash，则内置 mihomo 内核 + GeoIP/GeoSite 规则数据
 # -----------------------------------------------------------------------------
 if echo "${PACKAGES}" | grep -q "luci-app-openclash"; then
-  echo "✅ 已选择 luci-app-openclash，内置 OpenClash 内核与规则数据"
+  echo ">> 已选择 luci-app-openclash，内置 OpenClash 内核与规则数据"
   mkdir -p "${IB_DIR}/files/etc/openclash/core"
 
   # 按架构选择 mihomo 内核
+  META_URL=""
   case "${ARCH}" in
     x86-*)
       META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-amd64-v1.tar.gz"
@@ -307,28 +309,31 @@ if echo "${PACKAGES}" | grep -q "luci-app-openclash"; then
       ;;
     *)
       echo "::warning::不支持的架构 ${ARCH}，跳过 OpenClash 内核下载"
-      META_URL=""
       ;;
   esac
 
-  if [ -n "${META_URL}" ]; then
-    echo ">> 下载 mihomo 内核: ${META_URL}"
+  if [[ -n "${META_URL}" ]]; then
+    echo ">> 下载 mihomo 内核..."
     if wget -qO- "${META_URL}" | tar xOvz > "${IB_DIR}/files/etc/openclash/core/clash_meta" 2>/dev/null; then
       chmod +x "${IB_DIR}/files/etc/openclash/core/clash_meta"
-      echo ">> 内核大小: $(wc -c < "${IB_DIR}/files/etc/openclash/core/clash_meta") 字节"
+      echo ">> 内核: $(wc -c < "${IB_DIR}/files/etc/openclash/core/clash_meta") 字节"
     else
       echo "::warning::OpenClash 内核下载失败"
     fi
   fi
 
-  # GeoIP / GeoSite 规则数据
+  # 下载 GeoIP / GeoSite 规则数据
   echo ">> 下载 GeoIP / GeoSite 规则数据..."
-  wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -O "${IB_DIR}/files/etc/openclash/GeoIP.dat" \
-    && echo ">> GeoIP.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoIP.dat") 字节" \
-    || echo "::warning::GeoIP.dat 下载失败"
-  wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -O "${IB_DIR}/files/etc/openclash/GeoSite.dat" \
-    && echo ">> GeoSite.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoSite.dat") 字节" \
-    || echo "::warning::GeoSite.dat 下载失败"
+  if wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -O "${IB_DIR}/files/etc/openclash/GeoIP.dat"; then
+    echo ">> GeoIP.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoIP.dat") 字节"
+  else
+    echo "::warning::GeoIP.dat 下载失败"
+  fi
+  if wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -O "${IB_DIR}/files/etc/openclash/GeoSite.dat"; then
+    echo ">> GeoSite.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoSite.dat") 字节"
+  else
+    echo "::warning::GeoSite.dat 下载失败"
+  fi
 fi
 
 # -----------------------------------------------------------------------------
