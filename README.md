@@ -5,8 +5,8 @@
 ![OpenWrt](https://img.shields.io/badge/OpenWrt-24.10%20%7C%2025.12-00A98F?style=flat-square&logo=openwrt&logoColor=white)
 
 GitHub Composite Action：**从 OpenWrt 官方直接下载 ImageBuilder**（无需 Docker）构建定制化
-OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持预设默认管理 IP、rootfs 空间大小、
-PPPoE 拨号以及第三方插件。
+OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持预设默认管理 IP、root 密码、rootfs 空间、
+PPPoE 拨号、ZeroWrt 系统标识、彩色 SSH 登录横幅以及第三方插件。
 
 ## 功能特性
 
@@ -16,7 +16,12 @@ PPPoE 拨号以及第三方插件。
   （如 v24.10.8 / v25.12.5），**无需手动维护版本号**
 - 🖥️ **支持的架构**：`x86-64`、`x86-generic`、`x86-geode`、`x86-legacy`、`rockchip-armv8`
 - 🌐 **默认管理 IP** — 通过 `uci-defaults` 在首次启动自动写入
+- 🔑 **root 密码** — 可选设置固件 root 密码（首次启动生效）；留空保持默认空密码
 - 🔌 **PPPoE** — 从 secrets 读取账号密码自动配置拨号；不填则 WAN 保持 DHCP
+- 🖥️ **ZeroWrt 系统标识** — 自动写入 `DISTRIB_DESCRIPTION=ZeroWrt-日期`、
+  `DISTRIB_REVISION=By MinimaxFlora`、`os-release=ZeroWrt 标准版`，主机名设为 `ZeroWrt`
+- 🎨 **彩色 SSH 登录横幅** — 内置 SSRIP 彩色 banner（`files/etc/banner`，
+  参考 immortalwrt-mt798x 原版），SSH 登录即显示
 - 📦 **第三方插件** — 从 [Extras_Paclages](https://github.com/MinimaxFlora/Extras_Paclages)
   自动导入：24.x → `ipk` 分支，25.x → `apk` 分支，按架构分类直接存放
   `.ipk` / `.apk` 插件包（兼容旧的 `.run` 自解压包，有 `.run` 时自动解压）
@@ -39,17 +44,18 @@ jobs:
 
       - name: Build firmware
         id: build
-        uses: MinimaxFlora/gh-action-imagebuilder@master
+        uses: MinimaxFlora/gh-action-imagebuilder@v7.3
         with:
           arch: x86-64            # 设备架构
           version: 25             # 24 或 25（自动检测官方最新版）
           profile: generic        # 设备 PROFILE
           rootfs_partsize: 2048   # 软件包空间（MB）
           lan_ip: 192.168.1.1     # 默认管理 IP
+          root_password: ${{ secrets.ROOT_PASSWORD }}   # 可选：root 密码（留空则不设置）
           packages: luci-app-openclash luci-app-passwall   # 额外插件（空格分隔）
 
       - name: Upload firmware
-        uses: softprops/action-gh-release@v3
+        uses: MinimaxFlora/action-gh-release@v1.0
         with:
           files: ${{ steps.build.outputs.firmware_dir }}/**/*.img.gz
 ```
@@ -63,8 +69,8 @@ jobs:
 | `profile` | ❌ | `generic` | 设备 PROFILE（如 `friendlyarm_nanopi-r4s`） |
 | `rootfs_partsize` | ❌ | `2048` | 软件包分区大小（MB） |
 | `lan_ip` | ❌ | `192.168.1.1` | 默认管理 IP（写入 uci-defaults） |
+| `root_password` | ❌ | *(空)* | 固件 root 密码（首次启动生效）；留空保持默认空密码 |
 | `packages` | ❌ | *(空)* | 额外插件，**空格分隔** |
-| `root_password` | ❌ | *(空)* | 固件 root 密码（首次启动生效）；留空则保持默认空密码 |
 
 ## Secrets（密钥）
 
@@ -78,6 +84,17 @@ jobs:
 | 输出 | 说明 |
 | ---- | ---- |
 | `firmware_dir` | 固件输出目录（`<workspace>/.imagebuilder/.../bin/targets`） |
+
+## 首次启动自动配置（files/etc/uci-defaults/99-custom.sh）
+
+构建时使用仓库内静态模板 + 占位符替换生成，设备**首次开机**自动执行：
+
+- 默认管理 IP（`uci set network.lan.ipaddr`）
+- root 密码（可选，`passwd root`）
+- PPPoE 拨号（可选）
+- 所有网口可访问网页终端 / SSH
+- ZeroWrt 系统标识（openwrt_release / os-release）
+- 主机名 `ZeroWrt`
 
 ## 第三方插件（Extras_Paclages）
 
@@ -104,11 +121,12 @@ apk (25.x) / ipk (24.x)
 
 1. 根据 `version` 自动检测 OpenWrt 官方最新稳定版（抓取 `downloads.openwrt.org/releases/` 目录）
 2. 从官方下载对应架构的 `openwrt-imagebuilder-<版本>-<架构>.Linux-x86_64.tar.zst`
-3. 解压 ImageBuilder，写入 uci-defaults（LAN IP / PPPoE）
-4. 克隆 Extras_Paclages 对应分支（24.x → `ipk`，25.x → `apk`）
-5. 把架构同名文件夹内的 `.ipk` / `.apk` 包直接**移动**进 `packages/`（有 `.run` 则自动解压）
-6. 25.x 自动生成 `packages.adb` 索引并关闭签名校验
-7. `make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=...`
+3. 解压 ImageBuilder
+4. 复制静态文件：`files/etc/banner`（SSH 横幅）、`files/etc/uci-defaults/99-custom.sh`（占位符模板）
+5. 克隆 Extras_Paclages 对应分支（24.x → `ipk`，25.x → `apk`）
+6. 把架构同名文件夹内的 `.ipk` / `.apk` 包直接**移动**进 `packages/`（有 `.run` 则自动解压）
+7. 25.x 自动生成 `packages.adb` 索引并关闭签名校验
+8. `make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=...`
 
 > 说明：ImageBuilder 直接从 OpenWrt 官方下载，官方发布新版本后无需任何手动维护，
 > 自动检测并构建最新固件。
