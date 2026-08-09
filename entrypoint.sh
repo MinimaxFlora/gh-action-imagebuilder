@@ -18,6 +18,25 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
+# 0. ANSI colors + action info
+# -----------------------------------------------------------------------------
+C_RESET='\033[0m'
+C_BOLD='\033[1m'
+C_DIM='\033[2m'
+C_GREEN='\033[32m'
+C_CYAN='\033[36m'
+C_YELLOW='\033[33m'
+C_MAGENTA='\033[35m'
+C_RED='\033[31m'
+C_BG_BLUE='\033[44m'
+
+ACTION_NAME="gh-action-imagebuilder"
+ACTION_AUTHOR="MinimaxFlora"
+ACTION_REF="${GITHUB_ACTION_REF:-refs/heads/main}"
+ACTION_VERSION="${ACTION_REF##*/}"          # refs/tags/v7.3 -> v7.3
+[[ "${ACTION_VERSION}" == "main" ]] && ACTION_VERSION="dev"
+
+# -----------------------------------------------------------------------------
 # 1. Inputs (injected as environment variables by action.yml)
 # -----------------------------------------------------------------------------
 ARCH="${INPUT_ARCH:-x86-64}"
@@ -66,16 +85,28 @@ declare -A PKG_DIR=(
 )
 PKG_FOLDER="${PKG_DIR[$ARCH]:-$ARCH}"
 
-echo "===================================================="
-echo "  OpenWrt ImageBuilder Action"
-echo "===================================================="
-echo "  arch        : ${ARCH} -> ${IB_PREFIX}"
-echo "  version     : ${VERSION}"
-echo "  profile     : ${PROFILE}"
-echo "  rootfs size : ${ROOTFS_PARTSIZE} MB"
-echo "  lan ip      : ${LAN_IP}"
-echo "  pppoe       : $([[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]] && echo yes || echo no)"
-echo "===================================================="
+echo -e "${C_CYAN}${C_BOLD}"
+echo "╔════════════════════════════════════════════════════════════════════════╗"
+echo "║    ██████╗ ██████╗ ███████╗███╗   ██╗██╗    ██╗██████╗ ████████╗    ║"
+echo "║   ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██║    ██║██╔══██╗╚══██╔══╝    ║"
+echo "║   ██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║ █╗ ██║██████╔╝   ██║       ║"
+echo "║   ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██║███╗██║██╔═══╝    ██║       ║"
+echo "║   ╚██████╔╝██║     ███████╗██║ ╚████║╚███╔███╔╝██║         ██║      ║"
+echo "║    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚══╝╚══╝ ╚═╝         ╚═╝      ║"
+echo "╚════════════════════════════════════════════════════════════════════════╝"
+echo -e "${C_RESET}"
+echo -e "${C_GREEN}${C_BOLD}  ▸ ${ACTION_NAME} v${ACTION_VERSION}${C_RESET}  ${C_DIM}by ${ACTION_AUTHOR}${C_RESET}"
+echo -e "${C_DIM}  ──────────────────────────────────────────────────────────${C_RESET}"
+echo ""
+echo -e "${C_CYAN}${C_BOLD}┌─ 构建参数 ─────────────────────────────────────────────┐${C_RESET}"
+printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  架构" "${ARCH} → ${IB_PREFIX}"
+printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  版本" "${VERSION}"
+printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  profile" "${PROFILE}"
+printf "${C_YELLOW}%-14s${C_RESET} %s MB\n" "  rootfs" "${ROOTFS_PARTSIZE}"
+printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  LAN IP" "${LAN_IP}"
+printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  PPPoE" "$([[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]] && echo yes || echo no)"
+echo -e "${C_CYAN}${C_BOLD}└────────────────────────────────────────────────────────┘${C_RESET}"
+echo ""
 
 # -----------------------------------------------------------------------------
 # 2. Resolve the OpenWrt release version
@@ -91,11 +122,11 @@ detect_latest() {
 }
 
 if [[ "${VERSION}" =~ ^(24|25)$ ]]; then
-  echo ">> 自动检测 OpenWrt v${VERSION}.* 系列最新稳定版..."
+  echo -e "${C_CYAN}>>${C_RESET} 自动检测 OpenWrt v${VERSION}.* 系列最新稳定版..."
   LATEST="$(detect_latest "${VERSION}")"
   if [[ -n "${LATEST}" ]]; then
     VERSION="${LATEST}"
-    echo ">> 检测到最新版本: ${VERSION}"
+    echo -e "${C_CYAN}>>${C_RESET} 检测到最新版本: ${VERSION}"
   else
     echo "::error::未检测到 OpenWrt v${VERSION}.* 系列版本，请检查官方源 ${OPENWRT_DL}/"
     exit 1
@@ -119,10 +150,10 @@ IB_DIR="${WORKSPACE}/.imagebuilder"
 rm -rf "${IB_DIR}"
 mkdir -p "${IB_DIR}/files/etc/uci-defaults"
 
-echo ">> 下载 ImageBuilder: ${URL}"
+echo -e "${C_CYAN}>>${C_RESET} 下载 ImageBuilder: ${URL}"
 curl -fL --connect-timeout 20 -o "${IB_DIR}/imagebuilder.tar.zst" "${URL}"
 
-echo ">> 解压 ImageBuilder..."
+echo -e "${C_CYAN}>>${C_RESET} 解压 ImageBuilder..."
 tar --zstd -xf "${IB_DIR}/imagebuilder.tar.zst" -C "${IB_DIR}"
 rm -f "${IB_DIR}/imagebuilder.tar.zst"
 
@@ -131,7 +162,7 @@ if [[ -z "${IB_ROOT}" ]]; then
   echo "::error::ImageBuilder 解压失败，未找到 openwrt-imagebuilder-* 目录"
   exit 1
 fi
-echo ">> ImageBuilder 目录: ${IB_ROOT}"
+echo -e "${C_CYAN}>>${C_RESET} ImageBuilder 目录: ${IB_ROOT}"
 
 # 第三方软件包目录必须 = ImageBuilder 的 PACKAGE_DIR（Makefile: PACKAGE_DIR:=$(TOPDIR)/packages），
 # 即 ${IB_ROOT}/packages。若放到 IB_DIR/packages（IB_ROOT 的兄弟目录），
@@ -192,23 +223,23 @@ cp -f "${ACTION_PATH}/files/etc/banner" "${IB_DIR}/files/etc/banner"
 if [[ "${SRC_BRANCH}" == "apk" ]]; then
   mkdir -p "${IB_DIR}/files/etc/apk/keys"
   cp -f "${ACTION_PATH}/files/etc/apk/keys/key-build.pem" "${IB_DIR}/files/etc/apk/keys/key-build.pem"
-  echo ">> 已预置 apk 签名密钥 (25.x): /etc/apk/keys/key-build.pem"
+  echo -e "${C_CYAN}>>${C_RESET} 已预置 apk 签名密钥 (25.x): /etc/apk/keys/key-build.pem"
 else
   mkdir -p "${IB_DIR}/files/etc/opkg/keys"
   cp -f "${ACTION_PATH}/files/etc/opkg/keys/key-build.pub" "${IB_DIR}/files/etc/opkg/keys/key-build.pub"
-  echo ">> 已预置 ipk 签名密钥 (24.x): /etc/opkg/keys/key-build.pub"
+  echo -e "${C_CYAN}>>${C_RESET} 已预置 ipk 签名密钥 (24.x): /etc/opkg/keys/key-build.pub"
 fi
 
 if [[ -n "${LAN_IP}" ]]; then
-  echo ">> 已写入默认管理地址 ${LAN_IP}"
+  echo -e "${C_CYAN}>>${C_RESET} 已写入默认管理地址 ${LAN_IP}"
 fi
 if [[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]]; then
-  echo ">> 已写入 PPPoE 拨号配置"
+  echo -e "${C_CYAN}>>${C_RESET} 已写入 PPPoE 拨号配置"
 fi
 if [[ -n "${ROOT_PASSWORD}" ]]; then
-  echo ">> 已写入 root 密码（首次启动生效）"
+  echo -e "${C_CYAN}>>${C_RESET} 已写入 root 密码（首次启动生效）"
 fi
-echo ">> 已写入 SSH 登录横幅 /etc/banner"
+echo -e "${C_CYAN}>>${C_RESET} 已写入 SSH 登录横幅 /etc/banner"
 
 # -----------------------------------------------------------------------------
 # 5. Import third-party packages into packages/
@@ -222,7 +253,7 @@ git clone --depth=1 --branch "${SRC_BRANCH}" \
 SRC_ARCH_DIR="${IB_DIR}/pkg-repo/${PKG_FOLDER}"
 if [ -d "${SRC_ARCH_DIR}" ]; then
   mv -f "${SRC_ARCH_DIR}"/* "${PKG_DIR_PATH}/" 2>/dev/null || true
-  echo ">> 已移动 ${PKG_FOLDER} 架构第三方软件包 (${SRC_BRANCH} 分支) 到 packages/:"
+  echo -e "${C_CYAN}>>${C_RESET} 已移动 ${PKG_FOLDER} 架构第三方软件包 (${SRC_BRANCH} 分支) 到 packages/:"
   ls -1 "${PKG_DIR_PATH}" | sed 's/^/     - /' || true
 else
   echo "::warning::Extras_Paclages ${SRC_BRANCH} 分支中未找到 ${PKG_FOLDER} 架构目录"
@@ -237,16 +268,16 @@ RUN_FILES=( "${PKG_DIR_PATH}"/*.run )
 PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
 shopt -u nullglob
 
-echo ">> packages/ 内容检测: ${#RUN_FILES[@]} 个 .run | ${#PKG_FILES[@]} 个 ${EXPECTED_EXT}"
+echo -e "${C_CYAN}>>${C_RESET} packages/ 内容检测: ${#RUN_FILES[@]} 个 .run | ${#PKG_FILES[@]} 个 ${EXPECTED_EXT}"
 
 # ---- 有 .run 才执行解压；否则文件已就位，直接使用 ----
 if (( ${#RUN_FILES[@]} > 0 )); then
-  echo ">> 检测到 .run 安装包，开始解压..."
+  echo -e "${C_CYAN}>>${C_RESET} 检测到 .run 安装包，开始解压..."
   for f in "${RUN_FILES[@]}"; do
     chmod +x "$f"
     if "$f" --noexec --keep --target "${PKG_DIR_PATH}/" >/dev/null 2>&1; then
       rm -f "$f"
-      echo ">> 已解压: ${f##*/}"
+      echo -e "${C_CYAN}>>${C_RESET} 已解压: ${f##*/}"
     else
       echo "::warning::解包失败: ${f}"
     fi
@@ -258,7 +289,7 @@ if (( ${#RUN_FILES[@]} > 0 )); then
   PKG_FILES=( "${PKG_DIR_PATH}"/*"${EXPECTED_EXT}" )
   shopt -u nullglob
 else
-  echo ">> 未检测到 .run，无需解压，${EXPECTED_EXT} 包直接使用"
+  echo -e "${C_CYAN}>>${C_RESET} 未检测到 .run，无需解压，${EXPECTED_EXT} 包直接使用"
 fi
 
 # -----------------------------------------------------------------------------
@@ -287,7 +318,7 @@ PACKAGES="${DEFAULT_PACKAGES[*]}"
 if [[ -n "${USER_PACKAGES}" ]]; then
   PACKAGES="${PACKAGES} ${USER_PACKAGES}"
 fi
-echo ">> 最终软件包列表:"
+echo -e "${C_CYAN}>>${C_RESET} 最终软件包列表:"
 echo "    ${PACKAGES}"
 
 # -----------------------------------------------------------------------------
@@ -295,7 +326,7 @@ echo "    ${PACKAGES}"
 # 6.5 若选择了 luci-app-openclash，则内置 mihomo 内核 + GeoIP/GeoSite 规则数据
 # -----------------------------------------------------------------------------
 if echo "${PACKAGES}" | grep -q "luci-app-openclash"; then
-  echo ">> 已选择 luci-app-openclash，内置 OpenClash 内核与规则数据"
+  echo -e "${C_CYAN}>>${C_RESET} 已选择 luci-app-openclash，内置 OpenClash 内核与规则数据"
   mkdir -p "${IB_DIR}/files/etc/openclash/core"
 
   # 按架构选择 mihomo 内核
@@ -313,24 +344,24 @@ if echo "${PACKAGES}" | grep -q "luci-app-openclash"; then
   esac
 
   if [[ -n "${META_URL}" ]]; then
-    echo ">> 下载 mihomo 内核..."
+    echo -e "${C_CYAN}>>${C_RESET} 下载 mihomo 内核..."
     if wget -qO- "${META_URL}" | tar xOvz > "${IB_DIR}/files/etc/openclash/core/clash_meta" 2>/dev/null; then
       chmod +x "${IB_DIR}/files/etc/openclash/core/clash_meta"
-      echo ">> 内核: $(wc -c < "${IB_DIR}/files/etc/openclash/core/clash_meta") 字节"
+      echo -e "${C_CYAN}>>${C_RESET} 内核: $(wc -c < "${IB_DIR}/files/etc/openclash/core/clash_meta") 字节"
     else
       echo "::warning::OpenClash 内核下载失败"
     fi
   fi
 
   # 下载 GeoIP / GeoSite 规则数据
-  echo ">> 下载 GeoIP / GeoSite 规则数据..."
+  echo -e "${C_CYAN}>>${C_RESET} 下载 GeoIP / GeoSite 规则数据..."
   if wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -O "${IB_DIR}/files/etc/openclash/GeoIP.dat"; then
-    echo ">> GeoIP.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoIP.dat") 字节"
+    echo -e "${C_CYAN}>>${C_RESET} GeoIP.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoIP.dat") 字节"
   else
     echo "::warning::GeoIP.dat 下载失败"
   fi
   if wget -q "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -O "${IB_DIR}/files/etc/openclash/GeoSite.dat"; then
-    echo ">> GeoSite.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoSite.dat") 字节"
+    echo -e "${C_CYAN}>>${C_RESET} GeoSite.dat: $(wc -c < "${IB_DIR}/files/etc/openclash/GeoSite.dat") 字节"
   else
     echo "::warning::GeoSite.dat 下载失败"
   fi
@@ -342,7 +373,7 @@ fi
 #    必须手动生成，否则 apk 报 "unable to select packages"。
 # -----------------------------------------------------------------------------
 if [[ "${EXPECTED_EXT}" == ".apk" ]] && (( ${#PKG_FILES[@]} > 0 )); then
-  echo ">> 检测到 ${#PKG_FILES[@]} 个第三方 .apk 包，准备 apk 索引..."
+  echo -e "${C_CYAN}>>${C_RESET} 检测到 ${#PKG_FILES[@]} 个第三方 .apk 包，准备 apk 索引..."
   # ImageBuilder 自带 host apk 工具
   APK_BIN="${IB_ROOT}/staging_dir/host/bin/apk"
   if [ ! -x "$APK_BIN" ]; then
@@ -352,11 +383,11 @@ if [[ "${EXPECTED_EXT}" == ".apk" ]] && (( ${#PKG_FILES[@]} > 0 )); then
     # 关闭签名校验（25.x .config 默认 CONFIG_SIGNATURE_CHECK=y）
     if [ -f "${IB_ROOT}/.config" ]; then
       sed -i 's/^CONFIG_SIGNATURE_CHECK=.*/CONFIG_SIGNATURE_CHECK=/' "${IB_ROOT}/.config" 2>/dev/null || true
-      echo ">> 已关闭 CONFIG_SIGNATURE_CHECK"
+      echo -e "${C_CYAN}>>${C_RESET} 已关闭 CONFIG_SIGNATURE_CHECK"
     fi
     # 手动生成未签名索引
     if (cd "${PKG_DIR_PATH}" && "$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk) >/dev/null 2>&1; then
-      echo ">> 已生成 packages/packages.adb（未签名索引）"
+      echo -e "${C_CYAN}>>${C_RESET} 已生成 packages/packages.adb（未签名索引）"
     else
       echo "::warning::apk 索引生成失败，第三方包可能无法安装"
     fi
@@ -375,9 +406,13 @@ make image \
   FILES="${IB_DIR}/files" \
   ROOTFS_PARTSIZE="${ROOTFS_PARTSIZE}"
 
-echo "================================================"
-echo "  Build completed successfully"
-echo "================================================"
+echo -e "${C_GREEN}${C_BOLD}"
+echo "┌──────────────────────────────────────────────────────────────────┐"
+echo "│  ✅  Build completed successfully                                │"
+echo "│                                                                  │"
+echo "│  ▸ ${ACTION_NAME} v${ACTION_VERSION}  by ${ACTION_AUTHOR}                    │"
+echo "└──────────────────────────────────────────────────────────────────┘"
+echo -e "${C_RESET}"
 
 # -----------------------------------------------------------------------------
 # 9. Expose outputs
@@ -385,5 +420,5 @@ echo "================================================"
 FIRMWARE_DIR="${IB_ROOT}/bin/targets"
 echo "firmware_dir=${FIRMWARE_DIR}" >> "${GITHUB_OUTPUT}"
 
-echo ">> 固件输出目录: ${FIRMWARE_DIR}"
+echo -e "${C_CYAN}>>${C_RESET} 固件输出目录: ${FIRMWARE_DIR}"
 find "${FIRMWARE_DIR}" -type f \( -name "*.bin" -o -name "*.img*" -o -name "*.gz" -o -name "*.tar" -o -name "*.iso" -o -name "*.qcow2" -o -name "*.vmdk" -o -name "*.manifest" \) 2>/dev/null | sed 's/^/     /' || true
