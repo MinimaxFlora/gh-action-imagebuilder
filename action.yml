@@ -65,9 +65,8 @@ inputs:
 
   theme:
     description: >-
-      LuCI theme preset: argon (default) / kucat / aurora / design /
-      shadcn. Empty skips theme install; a raw package name is also
-      accepted for custom themes.
+      LuCI theme preset, one of: argon (default) / kucat / aurora /
+      design / shadcn. Unset or invalid values fall back to argon.
     required: false
     default: 'argon'
 
