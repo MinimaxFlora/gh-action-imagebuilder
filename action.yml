@@ -55,6 +55,22 @@ inputs:
     required: false
     default: ''
 
+  web_server:
+    description: >-
+      Web server / LuCI variant. 'uhttpd' (default) installs LuCI with
+      uhttpd; 'nginx' installs luci-nginx and applies the nginx server
+      config on first boot.
+    required: false
+    default: 'uhttpd'
+
+  theme:
+    description: >-
+      LuCI theme packages to install, separated by spaces. Default:
+      'luci-theme-argon luci-i18n-argon-config-zh-cn'. Leave empty to
+      skip installing a theme.
+    required: false
+    default: 'luci-theme-argon luci-i18n-argon-config-zh-cn'
+
   pppoe_account:
     description: >-
       Broadband account for PPPoE (pass from repository secrets in the
@@ -101,5 +117,7 @@ runs:
         INPUT_PPPOE_PASSWORD: ${{ inputs.pppoe_password }}
         INPUT_ROOT_PASSWORD: ${{ inputs.root_password }}
         INPUT_PACKAGES: ${{ inputs.packages }}
+        INPUT_WEB_SERVER: ${{ inputs.web_server }}
+        INPUT_THEME: ${{ inputs.theme }}
       run: |
         bash "${{ github.action_path }}/entrypoint.sh"

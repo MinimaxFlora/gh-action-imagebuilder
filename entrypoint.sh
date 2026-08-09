@@ -48,6 +48,8 @@ PPPOE_ACCOUNT="${INPUT_PPPOE_ACCOUNT:-}"
 PPPOE_PASSWORD="${INPUT_PPPOE_PASSWORD:-}"
 ROOT_PASSWORD="${INPUT_ROOT_PASSWORD:-}"
 USER_PACKAGES="${INPUT_PACKAGES:-}"
+WEB_SERVER="${INPUT_WEB_SERVER:-uhttpd}"          # uhttpd / nginx
+THEME="${INPUT_THEME:-luci-theme-argon luci-i18n-argon-config-zh-cn}"
 
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 ACTION_PATH="${GITHUB_ACTION_PATH:?GITHUB_ACTION_PATH is required}"
@@ -192,16 +194,36 @@ if [[ -n "${ROOT_PASSWORD}" ]]; then
 (echo \"\$ROOT_PASSWORD\"; sleep 1; echo \"\$ROOT_PASSWORD\") | passwd root"
 fi
 
+# 可选片段：nginx Web 服务器（WEB_SERVER=nginx 时启用，否则留空）
+NGINX_BLOCK=""
+if [[ "${WEB_SERVER}" == "nginx" ]]; then
+  NGINX_BLOCK="# nginx
+uci set nginx.global.uci_enable='true'
+uci del nginx._lan
+uci del nginx._redirect2ssl
+uci add nginx server
+uci rename nginx.@server[0]='_lan'
+uci set nginx._lan.server_name='_lan'
+uci add_list nginx._lan.listen='80 default_server'
+uci add_list nginx._lan.listen='[::]:80 default_server'
+#uci add_list nginx._lan.include='restrict_locally'
+uci add_list nginx._lan.include='conf.d/*.locations'
+uci set nginx._lan.access_log='off; # logd openwrt'
+uci commit nginx
+service nginx restart"
+fi
+
 # 从模板生成 99-custom.sh（Python 做占位符替换，避免多行 sed 转义问题）
 UCI_SCRIPT="${IB_DIR}/files/etc/uci-defaults/99-custom.sh"
 python3 - "${ACTION_PATH}/files/etc/uci-defaults/99-custom.sh" "${UCI_SCRIPT}" \
-  "${LAN_BLOCK}" "${PPPOE_BLOCK}" "${ROOT_PW_BLOCK}" <<'PYEOF'
+  "${LAN_BLOCK}" "${PPPOE_BLOCK}" "${ROOT_PW_BLOCK}" "${NGINX_BLOCK}" <<'PYEOF'
 import sys
-tmpl, out, lan, pppoe, rootpw = sys.argv[1:6]
+tmpl, out, lan, pppoe, rootpw, nginx = sys.argv[1:7]
 content = open(tmpl, encoding='utf-8').read()
 content = content.replace('__LAN_BLOCK__', lan)
 content = content.replace('__PPPOE_BLOCK__', pppoe)
 content = content.replace('__ROOT_PW_BLOCK__', rootpw)
+content = content.replace('__NGINX_BLOCK__', nginx)
 open(out, 'w', encoding='utf-8').write(content)
 PYEOF
 chmod +x "${UCI_SCRIPT}"
@@ -284,7 +306,10 @@ fi
 
 # -----------------------------------------------------------------------------
 # 6. Assemble the package list
+#    - Web server: uhttpd(默认) -> luci；nginx -> luci-nginx
+#    - 主题单独配置（默认 luci-theme-argon + 中文设置包）
 # -----------------------------------------------------------------------------
+# 基础默认包（不含 luci，由 WEB_SERVER 决定）
 DEFAULT_PACKAGES=(
   "-dnsmasq"
   "-apk-mbedtls"
@@ -292,7 +317,6 @@ DEFAULT_PACKAGES=(
   "dnsmasq-full"
   "apk-openssl"
   "libustream-openssl"
-  "luci"
   "luci-compat"
   "ip-full"
   "kmod-tun"
@@ -304,6 +328,19 @@ DEFAULT_PACKAGES=(
   "luci-i18n-package-manager-zh-cn"
   "luci-i18n-ttyd-zh-cn"
 )
+
+# Web 服务器：uhttpd -> luci；nginx -> luci-nginx
+if [[ "${WEB_SERVER}" == "nginx" ]]; then
+  DEFAULT_PACKAGES+=( "luci-nginx" )
+else
+  DEFAULT_PACKAGES+=( "luci" )
+fi
+
+# 主题（单独选项，默认 argon；留空则跳过）
+if [[ -n "${THEME}" ]]; then
+  DEFAULT_PACKAGES+=( ${THEME} )
+fi
+
 PACKAGES="${DEFAULT_PACKAGES[*]}"
 if [[ -n "${USER_PACKAGES}" ]]; then
   PACKAGES="${PACKAGES} ${USER_PACKAGES}"

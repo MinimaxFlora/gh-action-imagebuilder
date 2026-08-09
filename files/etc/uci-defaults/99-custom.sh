@@ -8,6 +8,8 @@ __PPPOE_BLOCK__
 
 __ROOT_PW_BLOCK__
 
+__NGINX_BLOCK__
+
 uci commit network
 
 # 设置所有网口可访问网页终端
