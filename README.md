@@ -3,10 +3,12 @@
 ![GitHub license](https://img.shields.io/github/license/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 ![GitHub stars](https://img.shields.io/github/stars/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 ![OpenWrt](https://img.shields.io/badge/OpenWrt-24.10%20%7C%2025.12-00A98F?style=flat-square&logo=openwrt&logoColor=white)
+![Release](https://img.shields.io/badge/版本-v7.3-56d4dd?style=flat-square)
 
 GitHub Composite Action：**从 OpenWrt 官方直接下载 ImageBuilder**（无需 Docker）构建定制化
-OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持预设默认管理 IP、root 密码、rootfs 空间、
-PPPoE 拨号、ZeroWrt 系统标识、彩色 SSH 登录横幅以及第三方插件。
+OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持 Web 服务器选择、LuCI 主题定制、
+预设默认管理 IP、root 密码、rootfs 空间、PPPoE 拨号、ZeroWrt 系统标识、
+彩色 SSH 登录横幅以及第三方插件。
 
 ## 功能特性
 
@@ -15,6 +17,10 @@ PPPoE 拨号、ZeroWrt 系统标识、彩色 SSH 登录横幅以及第三方插�
 - 🔄 **自动检测版本** — 设置 `24` 或 `25`，自动检测 OpenWrt 官方最新稳定版
   （如 v24.10.8 / v25.12.5），**无需手动维护版本号**
 - 🖥️ **支持的架构**：`x86-64`、`x86-generic`、`x86-geode`、`x86-legacy`、`rockchip-armv8`
+- 🌐 **Web 服务器可选** — `uhttpd`（默认，装 `luci`）或 `nginx`（装 `luci-nginx`
+  并首启自动写入 nginx uci 配置）
+- 🎨 **LuCI 主题可选** — 独立主题选项，默认 `luci-theme-argon` + 中文设置包，
+  可自由替换其他主题或留空跳过
 - 🌐 **默认管理 IP** — 通过 `uci-defaults` 在首次启动自动写入
 - 🔑 **root 密码** — 可选设置固件 root 密码（首次启动生效）；留空保持默认空密码
 - 🔌 **PPPoE** — 从 secrets 读取账号密码自动配置拨号；不填则 WAN 保持 DHCP
@@ -25,6 +31,8 @@ PPPoE 拨号、ZeroWrt 系统标识、彩色 SSH 登录横幅以及第三方插�
 - 📦 **第三方插件** — 从 [Extras_Paclages](https://github.com/MinimaxFlora/Extras_Paclages)
   自动导入：24.x → `ipk` 分支，25.x → `apk` 分支，按架构分类直接存放
   `.ipk` / `.apk` 插件包（兼容旧的 `.run` 自解压包，有 `.run` 时自动解压）
+- 🎨 **美化构建输出** — 彩色 ANSI banner + 构建参数面板 + 步骤日志高亮，
+  自动显示版本号与作者信息
 
 ## 使用
 
@@ -51,6 +59,8 @@ jobs:
           profile: generic        # 设备 PROFILE
           rootfs_partsize: 2048   # 软件包空间（MB）
           lan_ip: 192.168.1.1     # 默认管理 IP
+          web_server: uhttpd      # uhttpd（默认）或 nginx
+          theme: luci-theme-argon luci-i18n-argon-config-zh-cn   # 主题（默认 argon，留空跳过）
           root_password: ${{ secrets.ROOT_PASSWORD }}   # 可选：root 密码（留空则不设置）
           packages: luci-app-openclash luci-app-passwall   # 额外插件（空格分隔）
 
@@ -69,6 +79,8 @@ jobs:
 | `profile` | ❌ | `generic` | 设备 PROFILE（如 `friendlyarm_nanopi-r4s`） |
 | `rootfs_partsize` | ❌ | `2048` | 软件包分区大小（MB） |
 | `lan_ip` | ❌ | `192.168.1.1` | 默认管理 IP（写入 uci-defaults） |
+| `web_server` | ❌ | `uhttpd` | Web 服务器：`uhttpd`（默认，装 luci）或 `nginx`（装 luci-nginx + 首启 nginx 配置） |
+| `theme` | ❌ | `luci-theme-argon luci-i18n-argon-config-zh-cn` | LuCI 主题包（空格分隔），留空跳过 |
 | `root_password` | ❌ | *(空)* | 固件 root 密码（首次启动生效）；留空保持默认空密码 |
 | `packages` | ❌ | *(空)* | 额外插件，**空格分隔** |
 
@@ -85,6 +97,38 @@ jobs:
 | ---- | ---- |
 | `firmware_dir` | 固件输出目录（`<workspace>/.imagebuilder/.../bin/targets`） |
 
+## Web 服务器选择（web_server）
+
+| 值 | 安装包 | 首启配置 |
+| -- | ------ | ------- |
+| `uhttpd`（默认） | `luci` | 无（系统默认 uhttpd） |
+| `nginx` | `luci-nginx` | 自动写入 nginx uci 配置：监听 80 / `[::]:80`，`conf.d/*.locations` 包含，关闭 access_log，`service nginx restart` |
+
+选 `nginx` 时，`99-custom.sh` 首启自动执行：
+
+```sh
+uci set nginx.global.uci_enable='true'
+uci del nginx._lan
+uci del nginx._redirect2ssl
+uci add nginx server
+uci rename nginx.@server[0]='_lan'
+uci set nginx._lan.server_name='_lan'
+uci add_list nginx._lan.listen='80 default_server'
+uci add_list nginx._lan.listen='[::]:80 default_server'
+uci add_list nginx._lan.include='conf.d/*.locations'
+uci set nginx._lan.access_log='off; # logd openwrt'
+uci commit nginx
+service nginx restart
+```
+
+## LuCI 主题选择（theme）
+
+默认安装 `luci-theme-argon luci-i18n-argon-config-zh-cn`（argon 主题 + 中文设置包）。
+
+- 换主题：填包名即可，如 `luci-theme-bootstrap` / `luci-theme-material`
+- 组合安装：空格分隔多个包
+- 留空：跳过主题安装
+
 ## 首次启动自动配置（files/etc/uci-defaults/99-custom.sh）
 
 构建时使用仓库内静态模板 + 占位符替换生成，设备**首次开机**自动执行：
@@ -92,6 +136,7 @@ jobs:
 - 默认管理 IP（`uci set network.lan.ipaddr`）
 - root 密码（可选，`passwd root`）
 - PPPoE 拨号（可选）
+- nginx 配置（可选，web_server=nginx 时）
 - 所有网口可访问网页终端 / SSH
 - ZeroWrt 系统标识（openwrt_release / os-release）
 - 主机名 `ZeroWrt`
@@ -126,21 +171,14 @@ apk (25.x) / ipk (24.x)
 5. 克隆 Extras_Paclages 对应分支（24.x → `ipk`，25.x → `apk`）
 6. 把架构同名文件夹内的 `.ipk` / `.apk` 包直接**移动**进 `packages/`（有 `.run` 则自动解压）
 7. 25.x 自动生成 `packages.adb` 索引并关闭签名校验
-8. `make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=...`
+8. 组装软件包列表（默认包 + Web 服务器 + 主题 + 用户包）
+9. `make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=...`
 
-> 说明：ImageBuilder 直接从 OpenWrt 官方下载，官方发布新版本后无需任何手动维护，
-> 自动检测并构建最新固件。
+## 版本说明
 
-## 开发与测试
+- 通过 Git tag 管理版本（当前 `v7.3`），Firmware-Build 仓库引用 `@v7.3`
+- 版本号在构建输出中自动显示（取自 `GITHUB_ACTION_REF`）
 
-```bash
-bash -n entrypoint.sh                       # 语法检查
-# 本地模拟：
-INPUT_ARCH=x86-64 INPUT_VERSION=25 \
-GITHUB_WORKSPACE=/tmp/ws GITHUB_ACTION_PATH=$PWD \
-bash entrypoint.sh
-```
+## License
 
-## 许可
-
-[MIT](LICENSE)
+MIT
