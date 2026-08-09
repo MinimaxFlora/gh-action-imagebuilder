@@ -65,11 +65,11 @@ inputs:
 
   theme:
     description: >-
-      LuCI theme packages to install, separated by spaces. Default:
-      'luci-theme-argon luci-i18n-argon-config-zh-cn'. Leave empty to
-      skip installing a theme.
+      LuCI theme preset: argon (default) / kucat / aurora / design /
+      shadcn. Empty skips theme install; a raw package name is also
+      accepted for custom themes.
     required: false
-    default: 'luci-theme-argon luci-i18n-argon-config-zh-cn'
+    default: 'argon'
 
   pppoe_account:
     description: >-

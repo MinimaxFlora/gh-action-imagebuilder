@@ -80,7 +80,7 @@ jobs:
 | `rootfs_partsize` | ❌ | `2048` | 软件包分区大小（MB） |
 | `lan_ip` | ❌ | `192.168.1.1` | 默认管理 IP（写入 uci-defaults） |
 | `web_server` | ❌ | `uhttpd` | Web 服务器：`uhttpd`（默认，装 luci）或 `nginx`（装 luci-nginx + 首启 nginx 配置） |
-| `theme` | ❌ | `luci-theme-argon luci-i18n-argon-config-zh-cn` | LuCI 主题包（空格分隔），留空跳过 |
+| `theme` | ❌ | `argon` | LuCI 主题预设：`argon`（默认）/ `kucat` / `aurora` / `design` / `shadcn`，留空跳过，也接受自定义包名 |
 | `root_password` | ❌ | *(空)* | 固件 root 密码（首次启动生效）；留空保持默认空密码 |
 | `packages` | ❌ | *(空)* | 额外插件，**空格分隔** |
 
@@ -123,11 +123,19 @@ service nginx restart
 
 ## LuCI 主题选择（theme）
 
-默认安装 `luci-theme-argon luci-i18n-argon-config-zh-cn`（argon 主题 + 中文设置包）。
+预设主题（大小写不敏感，默认 `argon`）：
 
-- 换主题：填包名即可，如 `luci-theme-bootstrap` / `luci-theme-material`
-- 组合安装：空格分隔多个包
+| 预设值 | 安装包 |
+| ------ | ------ |
+| `argon`（默认） | `luci-theme-argon luci-i18n-argon-config-zh-cn` |
+| `kucat` | `luci-theme-kucat luci-i18n-kucat-config-zh-cn` |
+| `aurora` | `luci-theme-aurora luci-i18n-aurora-config-zh-cn` |
+| `design` | `luci-theme-design` |
+| `shadcn` | `luci-theme-shadcn` |
+
+- 用法：`theme: argon` / `theme: kucat` / `theme: aurora` / `theme: design` / `theme: shadcn`
 - 留空：跳过主题安装
+- 自定义：直接填包名，如 `theme: luci-theme-bootstrap`
 
 ## 首次启动自动配置（files/etc/uci-defaults/99-custom.sh）
 

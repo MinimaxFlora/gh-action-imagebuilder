@@ -49,7 +49,7 @@ PPPOE_PASSWORD="${INPUT_PPPOE_PASSWORD:-}"
 ROOT_PASSWORD="${INPUT_ROOT_PASSWORD:-}"
 USER_PACKAGES="${INPUT_PACKAGES:-}"
 WEB_SERVER="${INPUT_WEB_SERVER:-uhttpd}"          # uhttpd / nginx
-THEME="${INPUT_THEME:-luci-theme-argon luci-i18n-argon-config-zh-cn}"
+THEME="${INPUT_THEME:-argon}"                        # argon/kucat/aurora/design/shadcn，或直接填包名
 
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 ACTION_PATH="${GITHUB_ACTION_PATH:?GITHUB_ACTION_PATH is required}"
@@ -336,9 +336,21 @@ else
   DEFAULT_PACKAGES+=( "luci" )
 fi
 
-# 主题（单独选项，默认 argon；留空则跳过）
-if [[ -n "${THEME}" ]]; then
-  DEFAULT_PACKAGES+=( ${THEME} )
+# 主题（预设：argon/kucat/aurora/design/shadcn，默认 argon；留空跳过）
+# 映射为实际 LuCI 主题包；非预设值则按原始输入直接使用（兼容自定义包名）
+THEME_PACKAGES=""
+case "${THEME}" in
+  "" ) THEME_PACKAGES="" ;;
+  "argon"|"Argon" ) THEME_PACKAGES="luci-theme-argon luci-i18n-argon-config-zh-cn" ;;
+  "kucat"|"Kucat" ) THEME_PACKAGES="luci-theme-kucat luci-i18n-kucat-config-zh-cn" ;;
+  "aurora"|"Aurora" ) THEME_PACKAGES="luci-theme-aurora luci-i18n-aurora-config-zh-cn" ;;
+  "design"|"Design" ) THEME_PACKAGES="luci-theme-design" ;;
+  "shadcn"|"Shadcn" ) THEME_PACKAGES="luci-theme-shadcn" ;;
+  * ) THEME_PACKAGES="${THEME}" ;;
+esac
+if [[ -n "${THEME_PACKAGES}" ]]; then
+  DEFAULT_PACKAGES+=( ${THEME_PACKAGES} )
+  echo -e "${C_CYAN}>>${C_RESET} 已选择主题: ${THEME} → ${THEME_PACKAGES}"
 fi
 
 PACKAGES="${DEFAULT_PACKAGES[*]}"
