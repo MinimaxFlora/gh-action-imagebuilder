@@ -19,8 +19,8 @@ OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持 Web 服务器
 - 🖥️ **支持的架构**：`x86-64`、`x86-generic`、`x86-geode`、`x86-legacy`、`rockchip-armv8`
 - 🌐 **Web 服务器可选** — `uhttpd`（默认，装 `luci`）或 `nginx`（装 `luci-nginx`
   并首启自动写入 nginx uci 配置）
-- 🎨 **LuCI 主题可选** — 独立主题选项，默认 `luci-theme-argon` + 中文设置包，
-  可自由替换其他主题或留空跳过
+- 🎨 **LuCI 主题可选** — 独立主题选项，5 个预设（`argon` / `kucat` / `aurora` / `design` / `shadcn`），
+  默认 `argon`，自动映射对应主题包
 - 🌐 **默认管理 IP** — 通过 `uci-defaults` 在首次启动自动写入
 - 🔑 **root 密码** — 可选设置固件 root 密码（首次启动生效）；留空保持默认空密码
 - 🔌 **PPPoE** — 从 secrets 读取账号密码自动配置拨号；不填则 WAN 保持 DHCP
@@ -60,7 +60,7 @@ jobs:
           rootfs_partsize: 2048   # 软件包空间（MB）
           lan_ip: 192.168.1.1     # 默认管理 IP
           web_server: uhttpd      # uhttpd（默认）或 nginx
-          theme: luci-theme-argon luci-i18n-argon-config-zh-cn   # 主题（默认 argon，留空跳过）
+          theme: argon              # LuCI 主题预设：argon(默认)/kucat/aurora/design/shadcn
           root_password: ${{ secrets.ROOT_PASSWORD }}   # 可选：root 密码（留空则不设置）
           packages: luci-app-openclash luci-app-passwall   # 额外插件（空格分隔）
 
