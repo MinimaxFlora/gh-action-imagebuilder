@@ -85,27 +85,17 @@ declare -A PKG_DIR=(
 )
 PKG_FOLDER="${PKG_DIR[$ARCH]:-$ARCH}"
 
-echo -e "${C_CYAN}${C_BOLD}"
-echo "╔════════════════════════════════════════════════════════════════════════╗"
-echo "║    ██████╗ ██████╗ ███████╗███╗   ██╗██╗    ██╗██████╗ ████████╗    ║"
-echo "║   ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██║    ██║██╔══██╗╚══██╔══╝    ║"
-echo "║   ██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║ █╗ ██║██████╔╝   ██║       ║"
-echo "║   ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██║███╗██║██╔═══╝    ██║       ║"
-echo "║   ╚██████╔╝██║     ███████╗██║ ╚████║╚███╔███╔╝██║         ██║      ║"
-echo "║    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚══╝╚══╝ ╚═╝         ╚═╝      ║"
-echo "╚════════════════════════════════════════════════════════════════════════╝"
-echo -e "${C_RESET}"
-echo -e "${C_GREEN}${C_BOLD}  ▸ ${ACTION_NAME} v${ACTION_VERSION}${C_RESET}  ${C_DIM}by ${ACTION_AUTHOR}${C_RESET}"
-echo -e "${C_DIM}  ──────────────────────────────────────────────────────────${C_RESET}"
 echo ""
-echo -e "${C_CYAN}${C_BOLD}┌─ 构建参数 ─────────────────────────────────────────────┐${C_RESET}"
-printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  架构" "${ARCH} → ${IB_PREFIX}"
-printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  版本" "${VERSION}"
-printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  profile" "${PROFILE}"
-printf "${C_YELLOW}%-14s${C_RESET} %s MB\n" "  rootfs" "${ROOTFS_PARTSIZE}"
-printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  LAN IP" "${LAN_IP}"
-printf "${C_YELLOW}%-14s${C_RESET} %s\n" "  PPPoE" "$([[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]] && echo yes || echo no)"
-echo -e "${C_CYAN}${C_BOLD}└────────────────────────────────────────────────────────┘${C_RESET}"
+echo -e "  ${C_CYAN}${C_BOLD}◆ OpenWrt ImageBuilder${C_RESET}"
+echo -e "  ${C_DIM}${ACTION_NAME} · v${ACTION_VERSION} · ${ACTION_AUTHOR}${C_RESET}"
+echo ""
+echo -e "  ${C_GREEN}${C_BOLD}构建参数${C_RESET}"
+printf "  ${C_YELLOW}%-10s${C_RESET} %s\n" "架构" "${ARCH} → ${IB_PREFIX}"
+printf "  ${C_YELLOW}%-10s${C_RESET} %s\n" "版本" "${VERSION}"
+printf "  ${C_YELLOW}%-10s${C_RESET} %s\n" "profile" "${PROFILE}"
+printf "  ${C_YELLOW}%-10s${C_RESET} %s MB\n" "rootfs" "${ROOTFS_PARTSIZE}"
+printf "  ${C_YELLOW}%-10s${C_RESET} %s\n" "LAN IP" "${LAN_IP}"
+printf "  ${C_YELLOW}%-10s${C_RESET} %s\n" "PPPoE" "$([[ -n "${PPPOE_ACCOUNT}" && -n "${PPPOE_PASSWORD}" ]] && echo yes || echo no)"
 echo ""
 
 # -----------------------------------------------------------------------------
@@ -406,13 +396,10 @@ make image \
   FILES="${IB_DIR}/files" \
   ROOTFS_PARTSIZE="${ROOTFS_PARTSIZE}"
 
-echo -e "${C_GREEN}${C_BOLD}"
-echo "┌──────────────────────────────────────────────────────────────────┐"
-echo "│  ✅  Build completed successfully                                │"
-echo "│                                                                  │"
-echo "│  ▸ ${ACTION_NAME} v${ACTION_VERSION}  by ${ACTION_AUTHOR}                    │"
-echo "└──────────────────────────────────────────────────────────────────┘"
-echo -e "${C_RESET}"
+echo ""
+echo -e "  ${C_GREEN}${C_BOLD}✅ Build completed successfully${C_RESET}"
+echo -e "  ${C_DIM}${ACTION_NAME} · v${ACTION_VERSION} · ${ACTION_AUTHOR}${C_RESET}"
+echo ""
 
 # -----------------------------------------------------------------------------
 # 9. Expose outputs
