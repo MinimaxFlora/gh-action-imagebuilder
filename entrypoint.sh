@@ -254,6 +254,21 @@ fi
 echo -e "${C_CYAN}>>${C_RESET} 已写入 SSH 登录横幅 /etc/banner"
 
 # -----------------------------------------------------------------------------
+# 4b. 预置 Extras_Paclages 签名公钥到固件（24.x -> /etc/opkg/keys，25.x -> /etc/apk/keys）
+#     这样固件开箱即可信任 Extras_Paclages 作为软件源（opkg/apk 签名校验）
+# -----------------------------------------------------------------------------
+if [ -f "${ACTION_PATH}/key/key-build.pub" ]; then
+  mkdir -p "${IB_DIR}/files/etc/opkg/keys"
+  cp -f "${ACTION_PATH}/key/key-build.pub" "${IB_DIR}/files/etc/opkg/keys/key-build.pub"
+  echo ">> 已预置 opkg 公钥: /etc/opkg/keys/key-build.pub"
+fi
+if [ -f "${ACTION_PATH}/key/key-build.pem" ]; then
+  mkdir -p "${IB_DIR}/files/etc/apk/keys"
+  cp -f "${ACTION_PATH}/key/key-build.pem" "${IB_DIR}/files/etc/apk/keys/key-build.pem"
+  echo ">> 已预置 apk 公钥: /etc/apk/keys/key-build.pem"
+fi
+
+# -----------------------------------------------------------------------------
 # 5. Import third-party packages into packages/
 #    克隆 Extras_Paclages 对应分支，把架构同名文件夹（如 x86_64）内的文件
 #    移动进 packages/ 根目录；再检测 packages/ 全部内容：
