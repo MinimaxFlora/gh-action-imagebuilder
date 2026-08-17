@@ -363,6 +363,23 @@ esac
 DEFAULT_PACKAGES+=( ${THEME_PACKAGES} )
 echo -e "${C_CYAN}>>${C_RESET} 已选择主题: ${THEME:-argon} → ${THEME_PACKAGES}"
 
+# 硬件信息 autocore：x86 系列 → autocore-x86；rockchip-armv8 → autocore-arm
+case "${ARCH}" in
+  x86-64|x86-generic|x86-geode|x86-legacy)
+    AUTOCORE_PACKAGE="autocore-x86"
+    ;;
+  rockchip-armv8)
+    AUTOCORE_PACKAGE="autocore-arm"
+    ;;
+  *)
+    AUTOCORE_PACKAGE=""
+    ;;
+esac
+if [[ -n "${AUTOCORE_PACKAGE}" ]]; then
+  DEFAULT_PACKAGES+=( "${AUTOCORE_PACKAGE}" )
+  echo -e "${C_CYAN}>>${C_RESET} 已添加硬件信息包: ${AUTOCORE_PACKAGE}"
+fi
+
 PACKAGES="${DEFAULT_PACKAGES[*]}"
 if [[ -n "${USER_PACKAGES}" ]]; then
   PACKAGES="${PACKAGES} ${USER_PACKAGES}"
