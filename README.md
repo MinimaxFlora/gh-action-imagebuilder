@@ -3,7 +3,7 @@
 ![GitHub license](https://img.shields.io/github/license/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 ![GitHub stars](https://img.shields.io/github/stars/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 ![OpenWrt](https://img.shields.io/badge/OpenWrt-24.10%20%7C%2025.12-00A98F?style=flat-square&logo=openwrt&logoColor=white)
-![Release](https://img.shields.io/badge/版本-v7.5-56d4dd?style=flat-square)
+![Release](https://img.shields.io/badge/版本-v7.6-56d4dd?style=flat-square)
 
 GitHub Composite Action：**从 OpenWrt 官方直接下载 ImageBuilder**（无需 Docker）构建定制化
 OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持 Web 服务器选择、LuCI 主题定制、
@@ -52,7 +52,7 @@ jobs:
 
       - name: Build firmware
         id: build
-        uses: MinimaxFlora/gh-action-imagebuilder@v7.5
+        uses: MinimaxFlora/gh-action-imagebuilder@v7.6
         with:
           arch: x86-64            # 设备架构
           version: 25             # 24 或 25（自动检测官方最新版）
@@ -103,6 +103,10 @@ jobs:
 | -- | ------ | ------- |
 | `uhttpd`（默认） | `luci` | 无（系统默认 uhttpd） |
 | `nginx` | `luci-nginx` | 自动写入 nginx uci 配置：监听 80 / `[::]:80`，`conf.d/*.locations` 包含，关闭 access_log，`service nginx restart` |
+
+> 💡 **自动切换**：`packages` 中包含 `quickfile`（如 `luci-app-quickfile` / `quickfile` /
+> `luci-i18n-quickfile-zh-cn`）时，QuickFile 依赖 nginx，即使 `web_server` 选了 `uhttpd`
+> 也会**自动切换为 nginx**，无需手动指定。
 
 选 `nginx` 时，`99-custom.sh` 首启自动执行：
 
@@ -183,7 +187,7 @@ apk (25.x) / ipk (24.x)
 
 ## 版本说明
 
-- 通过 Git tag 管理版本（当前 `v7.5`），Firmware-Build 仓库引用 `@v7.5`
+- 通过 Git tag 管理版本（当前 `v7.6`），Firmware-Build 仓库引用 `@v7.6`
 - 版本号在构建输出中自动显示（取自 `GITHUB_ACTION_REF`）
 
 ## License

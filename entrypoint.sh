@@ -51,6 +51,15 @@ USER_PACKAGES="${INPUT_PACKAGES:-}"
 WEB_SERVER="${INPUT_WEB_SERVER:-uhttpd}"          # uhttpd / nginx
 THEME="${INPUT_THEME:-argon}"                        # argon/kucat/aurora/design/shadcn/fluent，或直接填包名
 
+# QuickFile 依赖 nginx：packages 里出现 quickfile（luci-app-quickfile / quickfile /
+# luci-i18n-quickfile-zh-cn）时强制 web_server=nginx；用户选了 uhttpd 则自动切换
+if echo "${USER_PACKAGES}" | grep -q "quickfile"; then
+  if [[ "${WEB_SERVER}" != "nginx" ]]; then
+    echo -e "${C_YELLOW}>>${C_RESET} 检测到 packages 含 quickfile（依赖 nginx），web_server 由 ${WEB_SERVER} 自动切换为 nginx"
+    WEB_SERVER="nginx"
+  fi
+fi
+
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 ACTION_PATH="${GITHUB_ACTION_PATH:?GITHUB_ACTION_PATH is required}"
 
@@ -342,7 +351,6 @@ DEFAULT_PACKAGES=(
   "luci-i18n-firewall-zh-cn"
   "luci-i18n-package-manager-zh-cn"
   "luci-i18n-ttyd-zh-cn"
-  "luci-i18n-quickfile-zh-cn"
 )
 
 # Web 服务器：uhttpd -> luci；nginx -> luci-nginx
