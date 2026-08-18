@@ -351,6 +351,7 @@ DEFAULT_PACKAGES=(
   "luci-i18n-firewall-zh-cn"
   "luci-i18n-package-manager-zh-cn"
   "luci-i18n-ttyd-zh-cn"
+  "openssh-sftp-server"
 )
 
 # Web 服务器：uhttpd -> luci；nginx -> luci-nginx
