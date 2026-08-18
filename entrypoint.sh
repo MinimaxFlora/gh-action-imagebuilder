@@ -450,6 +450,31 @@ fi
 # -----------------------------------------------------------------------------
 if [[ "${EXPECTED_EXT}" == ".apk" ]] && (( ${#PKG_FILES[@]} > 0 )); then
   echo -e "${C_CYAN}>>${C_RESET} 检测到 ${#PKG_FILES[@]} 个第三方 .apk 包，准备 apk 索引..."
+
+  # ---- 修正 apk 文件名与包内版本不一致 ----
+  # 部分第三方 apk 文件名把版本中的 '~'（git hash 分隔符）写成了 '.'，
+  # 如 luci-i18n-quickfile-zh-cn-26.221.69441.0f2ef3d.apk，而包内 PKGINFO 版本是
+  # 26.221.69441~0f2ef3d。apk mkndx 按包内版本生成索引，apk 安装时按 '~' 文件名
+  # 查找实际文件失败，报 "package mentioned in index not found (try 'apk update')"。
+  # 这里把文件名末尾 hash 前的 '.' 改回 '~'，与索引保持一致。
+  shopt -s nullglob
+  APK_RENAMED=0
+  for f in "${PKG_DIR_PATH}"/*.apk; do
+    base="${f%.apk}"
+    if [[ "${base}" =~ \.([0-9a-fA-F]{6,10})$ ]]; then
+      target="${base%.${BASH_REMATCH[1]}}~${BASH_REMATCH[1]}.apk"
+      if [[ "${target}" != "${f}" ]]; then
+        mv -f "${f}" "${target}"
+        APK_RENAMED=$((APK_RENAMED+1))
+        echo -e "${C_YELLOW}>>${C_RESET} 修正 apk 文件名: ${f##*/} -> ${target##*/}"
+      fi
+    fi
+  done
+  shopt -u nullglob
+  if (( APK_RENAMED > 0 )); then
+    echo -e "${C_YELLOW}>>${C_RESET} 共修正 ${APK_RENAMED} 个 apk 文件名（~ 被写成 .），与包内版本保持一致"
+  fi
+
   # ImageBuilder 自带 host apk 工具
   APK_BIN="${IB_ROOT}/staging_dir/host/bin/apk"
   if [ ! -x "$APK_BIN" ]; then
