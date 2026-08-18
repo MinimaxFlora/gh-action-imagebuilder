@@ -3,7 +3,7 @@
 ![GitHub license](https://img.shields.io/github/license/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 ![GitHub stars](https://img.shields.io/github/stars/MinimaxFlora/gh-action-imagebuilder?style=flat-square)
 ![OpenWrt](https://img.shields.io/badge/OpenWrt-24.10%20%7C%2025.12-00A98F?style=flat-square&logo=openwrt&logoColor=white)
-![Release](https://img.shields.io/badge/版本-v7.6-56d4dd?style=flat-square)
+![Release](https://img.shields.io/badge/版本-v7.7-56d4dd?style=flat-square)
 
 GitHub Composite Action：**从 OpenWrt 官方直接下载 ImageBuilder**（无需 Docker）构建定制化
 OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持 Web 服务器选择、LuCI 主题定制、
@@ -52,7 +52,7 @@ jobs:
 
       - name: Build firmware
         id: build
-        uses: MinimaxFlora/gh-action-imagebuilder@v7.6
+        uses: MinimaxFlora/gh-action-imagebuilder@v7.7
         with:
           arch: x86-64            # 设备架构
           version: 25             # 24 或 25（自动检测官方最新版）
@@ -136,7 +136,7 @@ service nginx restart
 | `aurora` | `luci-theme-aurora luci-i18n-aurora-config-zh-cn` |
 | `design` | `luci-theme-design` |
 | `shadcn` | `luci-theme-shadcn` |
-| `fluent` | `luci-theme-fluent` |
+| `fluent` | `luci-theme-fluent luci-i18n-fluent-zh-cn` |
 
 用法：`theme: argon` / `theme: kucat` / `theme: aurora` / `theme: design` / `theme: shadcn` / `theme: fluent`
 
@@ -187,7 +187,7 @@ apk (25.x) / ipk (24.x)
 
 ## 版本说明
 
-- 通过 Git tag 管理版本（当前 `v7.6`），Firmware-Build 仓库引用 `@v7.6`
+- 通过 Git tag 管理版本（当前 `v7.7`），Firmware-Build 仓库引用 `@v7.7`
 - 版本号在构建输出中自动显示（取自 `GITHUB_ACTION_REF`）
 
 ## License

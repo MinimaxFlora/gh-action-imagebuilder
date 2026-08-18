@@ -367,7 +367,7 @@ case "${THEME}" in
   "aurora"|"Aurora" ) THEME_PACKAGES="luci-theme-aurora luci-i18n-aurora-config-zh-cn" ;;
   "design"|"Design" ) THEME_PACKAGES="luci-theme-design" ;;
   "shadcn"|"Shadcn" ) THEME_PACKAGES="luci-theme-shadcn" ;;
-  "fluent"|"Fluent" ) THEME_PACKAGES="luci-theme-fluent" ;;
+  "fluent"|"Fluent" ) THEME_PACKAGES="luci-theme-fluent luci-i18n-fluent-zh-cn" ;;
   * ) THEME_PACKAGES="luci-theme-argon luci-i18n-argon-config-zh-cn" ;;
 esac
 DEFAULT_PACKAGES+=( ${THEME_PACKAGES} )
