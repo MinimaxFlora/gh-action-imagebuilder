@@ -49,7 +49,7 @@ PPPOE_PASSWORD="${INPUT_PPPOE_PASSWORD:-}"
 ROOT_PASSWORD="${INPUT_ROOT_PASSWORD:-}"
 USER_PACKAGES="${INPUT_PACKAGES:-}"
 WEB_SERVER="${INPUT_WEB_SERVER:-uhttpd}"          # uhttpd / nginx
-THEME="${INPUT_THEME:-argon}"                        # argon/kucat/aurora/design/shadcn，或直接填包名
+THEME="${INPUT_THEME:-argon}"                        # argon/kucat/aurora/design/shadcn/fluent，或直接填包名
 
 WORKSPACE="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 ACTION_PATH="${GITHUB_ACTION_PATH:?GITHUB_ACTION_PATH is required}"
@@ -342,6 +342,7 @@ DEFAULT_PACKAGES=(
   "luci-i18n-firewall-zh-cn"
   "luci-i18n-package-manager-zh-cn"
   "luci-i18n-ttyd-zh-cn"
+  "luci-i18n-quickfile-zh-cn"
 )
 
 # Web 服务器：uhttpd -> luci；nginx -> luci-nginx
@@ -351,13 +352,14 @@ else
   DEFAULT_PACKAGES+=( "luci" )
 fi
 
-# 主题：仅支持预设 argon/kucat/aurora/design/shadcn，不设置或无效值默认 argon
+# 主题：仅支持预设 argon/kucat/aurora/design/shadcn/fluent，不设置或无效值默认 argon
 case "${THEME}" in
   "argon"|"Argon" ) THEME_PACKAGES="luci-theme-argon luci-i18n-argon-config-zh-cn" ;;
   "kucat"|"Kucat" ) THEME_PACKAGES="luci-theme-kucat luci-i18n-kucat-config-zh-cn" ;;
   "aurora"|"Aurora" ) THEME_PACKAGES="luci-theme-aurora luci-i18n-aurora-config-zh-cn" ;;
   "design"|"Design" ) THEME_PACKAGES="luci-theme-design" ;;
   "shadcn"|"Shadcn" ) THEME_PACKAGES="luci-theme-shadcn" ;;
+  "fluent"|"Fluent" ) THEME_PACKAGES="luci-theme-fluent" ;;
   * ) THEME_PACKAGES="luci-theme-argon luci-i18n-argon-config-zh-cn" ;;
 esac
 DEFAULT_PACKAGES+=( ${THEME_PACKAGES} )

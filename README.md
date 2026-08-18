@@ -19,7 +19,7 @@ OpenWrt 固件。自动检测 24.x / 25.x 最新稳定版，支持 Web 服务器
 - 🖥️ **支持的架构**：`x86-64`、`x86-generic`、`x86-geode`、`x86-legacy`、`rockchip-armv8`
 - 🌐 **Web 服务器可选** — `uhttpd`（默认，装 `luci`）或 `nginx`（装 `luci-nginx`
   并首启自动写入 nginx uci 配置）
-- 🎨 **LuCI 主题可选** — 独立主题选项，5 个预设（`argon` / `kucat` / `aurora` / `design` / `shadcn`），
+- 🎨 **LuCI 主题可选** — 独立主题选项，6 个预设（`argon` / `kucat` / `aurora` / `design` / `shadcn` / `fluent`），
   默认 `argon`，自动映射对应主题包
 - 🌐 **默认管理 IP** — 通过 `uci-defaults` 在首次启动自动写入
 - 🔑 **root 密码** — 可选设置固件 root 密码（首次启动生效）；留空保持默认空密码
@@ -60,7 +60,7 @@ jobs:
           rootfs_partsize: 2048   # 软件包空间（MB）
           lan_ip: 192.168.1.1     # 默认管理 IP
           web_server: uhttpd      # uhttpd（默认）或 nginx
-          theme: argon              # LuCI 主题预设：argon(默认)/kucat/aurora/design/shadcn
+          theme: argon              # LuCI 主题预设：argon(默认)/kucat/aurora/design/shadcn/fluent
           root_password: ${{ secrets.ROOT_PASSWORD }}   # 可选：root 密码（留空则不设置）
           packages: luci-app-openclash luci-app-passwall   # 额外插件（空格分隔）
 
@@ -80,7 +80,7 @@ jobs:
 | `rootfs_partsize` | ❌ | `2048` | 软件包分区大小（MB） |
 | `lan_ip` | ❌ | `192.168.1.1` | 默认管理 IP（写入 uci-defaults） |
 | `web_server` | ❌ | `uhttpd` | Web 服务器：`uhttpd`（默认，装 luci）或 `nginx`（装 luci-nginx + 首启 nginx 配置） |
-| `theme` | ❌ | `argon` | LuCI 主题预设：`argon`（默认）/ `kucat` / `aurora` / `design` / `shadcn`，不设置或无效值默认 argon |
+| `theme` | ❌ | `argon` | LuCI 主题预设：`argon`（默认）/ `kucat` / `aurora` / `design` / `shadcn` / `fluent`，不设置或无效值默认 argon |
 | `root_password` | ❌ | *(空)* | 固件 root 密码（首次启动生效）；留空保持默认空密码 |
 | `packages` | ❌ | *(空)* | 额外插件，**空格分隔** |
 
@@ -132,8 +132,9 @@ service nginx restart
 | `aurora` | `luci-theme-aurora luci-i18n-aurora-config-zh-cn` |
 | `design` | `luci-theme-design` |
 | `shadcn` | `luci-theme-shadcn` |
+| `fluent` | `luci-theme-fluent` |
 
-用法：`theme: argon` / `theme: kucat` / `theme: aurora` / `theme: design` / `theme: shadcn`
+用法：`theme: argon` / `theme: kucat` / `theme: aurora` / `theme: design` / `theme: shadcn` / `theme: fluent`
 
 ## 首次启动自动配置（files/etc/uci-defaults/99-custom.sh）
 
